@@ -29,8 +29,28 @@ jobs:
       - name: Unit tests
         run: go test ./...
 
-  e2e:
+  # Resolve the latest published haybarn release once, so the E2E job always
+  # tests the current version (and we never hardcode/pin it).
+  resolve-haybarn:
+    name: Resolve haybarn release
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.r.outputs.release }}
+    steps:
+      - id: r
+        run: |
+          REL=$(gh release view --repo Query-farm-haybarn/haybarn --json tagName --jq .tagName)
+          echo "release=$REL" >> "$GITHUB_OUTPUT"
+          echo "Latest haybarn release: $REL"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # SQL end-to-end: run the sqllogictest suite (test/sql/*.test) against the
+  # built Go worker through the real signed `vgi` community DuckDB extension via
+  # a prebuilt standalone `haybarn-unittest` — no C++ build. See ci/README.md.
+  integration:
     name: SQL end-to-end (haybarn)
+    needs: resolve-haybarn
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,15 +58,30 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
+          cache: true
 
-      # uv provides the haybarn-unittest tool installer.
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Build the worker
+        run: go build -o vgi-fhir-worker ./cmd/vgi-fhir-worker
 
-      - name: Install haybarn-unittest
+      - name: Download haybarn-unittest
         run: |
-          uv tool install haybarn-unittest
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          gh release download "$HAYBARN_RELEASE" \
+            --repo Query-farm-haybarn/haybarn \
+            --pattern 'haybarn_unittest-linux-amd64.zip' \
+            --output haybarn-unittest.zip --clobber
+          mkdir -p hb && unzip -o -q haybarn-unittest.zip -d hb
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAYBARN_RELEASE: ${{ needs.resolve-haybarn.outputs.release }}
 
-      - name: SQL end-to-end
-        run: make test-sql
+      - name: Resolve runner + worker paths
+        run: |
+          # Absolute paths: run-integration.sh cd's into a staging dir before
+          # invoking the runner, so relative paths would not resolve.
+          UNITTEST="$PWD/$(find hb -name 'haybarn-unittest' -type f | head -1)"
+          chmod +x "$UNITTEST"
+          echo "HAYBARN_UNITTEST=$UNITTEST" >> "$GITHUB_ENV"
+          echo "VGI_FHIR_WORKER=$PWD/vgi-fhir-worker" >> "$GITHUB_ENV"
+
+      - name: Run extension integration suite
+        run: ci/run-integration.sh
