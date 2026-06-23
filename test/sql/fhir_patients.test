@@ -1,0 +1,95 @@
+# name: test/sql/fhir_patients.test
+# description: fhir_patients + fhir_observations + fhir_capabilities against the mock FHIR server
+# group: [vgi_fhir]
+
+require-env VGI_FHIR_WORKER
+
+require-env VGI_FHIR_TEST_URL
+
+require-env VGI_FHIR_TEST_TOKEN
+
+# haybarn-unittest does NOT autoload the extension for `require vgi` (it is
+# silently SKIPPED). Load it explicitly instead.
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION '${VGI_FHIR_WORKER}');
+
+# ---- fhir_patients: all three seed patients, flattened core fields ----
+# The mock server caps Patient pages at 2, so this also proves the worker
+# follows Bundle `next` links (3 patients across 2 pages).
+
+query I
+SELECT count(*)
+FROM fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}');
+----
+3
+
+# A specific patient's family name.
+query T
+SELECT family
+FROM fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'p1';
+----
+Smith
+
+# Flattened core fields for p1.
+query TTTTT
+SELECT family, given, gender, birth_date, active
+FROM fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'p1';
+----
+Smith	Alice M	female	1980-05-12	true
+
+# raw carries the full resource JSON.
+query I
+SELECT raw LIKE '%"resourceType":"Patient"%'
+FROM fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'p1';
+----
+true
+
+# ---- fhir_observations: numeric valueQuantity parsed, non-numeric NULL ----
+
+query TRT
+SELECT code, value, unit
+FROM fhir.fhir_observations('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'o1';
+----
+29463-7	72.5	kg
+
+# o2 has no valueQuantity → value is NULL.
+query I
+SELECT value IS NULL
+FROM fhir.fhir_observations('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'o2';
+----
+true
+
+# ---- fhir_capabilities: resource types + interactions (VARCHAR[]) ----
+
+query I
+SELECT count(*)
+FROM fhir.fhir_capabilities('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}');
+----
+2
+
+# UNNEST the interactions list for Patient.
+query T
+SELECT i
+FROM (
+  SELECT UNNEST(interactions) AS i
+  FROM fhir.fhir_capabilities('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}')
+  WHERE resource_type = 'Patient'
+)
+ORDER BY i;
+----
+read
+search-type
+
+# ---- wrong token surfaces a clean error (401) ----
+
+statement error
+SELECT * FROM fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := 'not-the-token');
+----

@@ -1,0 +1,68 @@
+# name: test/sql/fhir_search.test
+# description: fhir_search + fhir_read against the mock FHIR server
+# group: [vgi_fhir]
+
+require-env VGI_FHIR_WORKER
+
+require-env VGI_FHIR_TEST_URL
+
+require-env VGI_FHIR_TEST_TOKEN
+
+statement ok
+LOAD vgi;
+
+statement ok
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION '${VGI_FHIR_WORKER}');
+
+# ---- fhir_search: generic search returns id + full resource JSON ----
+# Pagination: the mock caps Patient pages at 2, so all 3 come back across pages.
+
+query I
+SELECT count(*)
+FROM fhir.fhir_search('${VGI_FHIR_TEST_URL}', 'Patient', token := '${VGI_FHIR_TEST_TOKEN}');
+----
+3
+
+query T
+SELECT id
+FROM fhir.fhir_search('${VGI_FHIR_TEST_URL}', 'Patient', token := '${VGI_FHIR_TEST_TOKEN}')
+ORDER BY id;
+----
+p1
+p2
+p3
+
+# resource is the full JSON for that entry.
+query I
+SELECT resource LIKE '%"family":"Jones"%'
+FROM fhir.fhir_search('${VGI_FHIR_TEST_URL}', 'Patient', token := '${VGI_FHIR_TEST_TOKEN}')
+WHERE id = 'p2';
+----
+true
+
+# explicit small page size still returns every resource.
+query I
+SELECT count(*)
+FROM fhir.fhir_search('${VGI_FHIR_TEST_URL}', 'Patient', token := '${VGI_FHIR_TEST_TOKEN}', count := 1);
+----
+3
+
+# ---- fhir_read: a single resource by id ----
+
+query I
+SELECT count(*)
+FROM fhir.fhir_read('${VGI_FHIR_TEST_URL}', 'Patient', 'p2', token := '${VGI_FHIR_TEST_TOKEN}');
+----
+1
+
+query I
+SELECT resource LIKE '%"id":"p2"%'
+FROM fhir.fhir_read('${VGI_FHIR_TEST_URL}', 'Patient', 'p2', token := '${VGI_FHIR_TEST_TOKEN}');
+----
+true
+
+# ---- reading a missing resource surfaces a clean error (404) ----
+
+statement error
+SELECT * FROM fhir.fhir_read('${VGI_FHIR_TEST_URL}', 'Patient', 'does-not-exist', token := '${VGI_FHIR_TEST_TOKEN}');
+----

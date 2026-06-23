@@ -1,0 +1,16 @@
+# Built binaries
+/vgi-fhir-worker
+/mockserver
+
+# Go build/test artifacts (the leading slash limits *.test to the repo root so
+# the haybarn sqllogictest files under test/sql/ are NOT ignored).
+/*.test
+*.out
+coverage.out
+
+# DuckDB unittest scratch dir
+/duckdb_unittest_tempdir/
+
+# Editor / OS cruft
+.DS_Store
+/.tmpbin/
