@@ -1,0 +1,89 @@
+# golangci-lint configuration for vgi-go (golangci-lint v2 schema).
+# Run: make lint
+#
+# Keep this conservative — enable rules that catch real bugs and dead code,
+# avoid noisy/stylistic rules until contributors opt in.
+version: "2"
+
+run:
+  go: "1.25"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Documentation quality (closest Go has to pydoclint), scoped to the public
+    # SDK (vgi/) below — examples stay relaxed:
+    #   revive    — exported symbols (incl. public interface methods) carry a
+    #               doc comment that starts with the symbol name; comment hygiene.
+    #   godot     — doc comments are punctuated sentences (period). We do NOT
+    #               enable godot's capital check: it conflicts with Go's
+    #               convention that an unexported symbol's doc starts with the
+    #               (lowercase) identifier name, and false-positives on indented
+    #               code blocks inside godoc.
+    #   godoclint — the dedicated godoc linter: requires docs on exported
+    #               symbols revive skips (e.g. error-interface methods), requires
+    #               a package doc, validates Deprecated: notices and doc links.
+    - revive
+    - godot
+    - godoclint
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+        # Disabled: ST1000 ("missing package comment") fires on every example
+        # subpackage; we keep package comments on the public SDK only.
+        - "-ST1000"
+        # Disabled: ST1003 ("var should be in camelCase") flags Arrow-style
+        # snake_case wire field names used in serialized payloads.
+        - "-ST1003"
+    revive:
+      # Only report rules we explicitly enable (no default rule set).
+      enable-all-rules: false
+      rules:
+        # Every exported symbol — including the methods of exported interfaces
+        # (the API contracts users implement) — must have a doc comment that
+        # starts with its name.
+        - name: exported
+          arguments: [checkPrivateReceivers, checkPublicInterface]
+        # Package-level doc comment must be present and well-formed.
+        - name: package-comments
+        # Comments must have a space after the leading slashes (//foo -> // foo).
+        - name: comment-spacings
+    godot:
+      # Check top-level declaration comments (not every inline comment).
+      # period:true is the default; capital is intentionally left off (see above).
+      scope: declarations
+    godoclint:
+      # Start from the "basic" preset (start-with-name, pkg-doc, single-pkg-doc,
+      # deprecated) and add the stricter presence/link rules.
+      default: basic
+      enable:
+        - require-doc       # exported symbols must be documented
+        - require-pkg-doc   # every package must have a doc comment
+        - no-unused-link    # no dangling link definitions in doc comments
+      options:
+        require-doc:
+          # Don't force docs on unexported internals — only the public surface.
+          ignore-unexported: true
+  exclusions:
+    rules:
+      # Generated code — leave alone.
+      - path: vgi/generated/
+        linters: [errcheck, govet, ineffassign, staticcheck, unused, revive, godot, godoclint]
+      # Tests often defer Close/Cleanup without checking the error.
+      - path: _test\.go
+        linters: [errcheck]
+      # Doc-coverage rules apply only to the public SDK (vgi/). Examples,
+      # commands, internal helpers, and tests stay relaxed for now.
+      - path: (examples/|cmd/|internal/|_test\.go)
+        linters: [revive, godot, godoclint]
+
+issues:
+  # Show every issue per file (default: 3) — the suite is small enough.
+  max-issues-per-linter: 0
+  max-same-issues: 0
