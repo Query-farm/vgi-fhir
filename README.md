@@ -4,7 +4,9 @@
 
 <p align="center"><em>A <a href="https://query.farm">Query.Farm</a> VGI worker for DuckDB.</em></p>
 
-# vgi-fhir
+# Query HL7 FHIR R4 Resources as Tables in DuckDB
+
+> **vgi-fhir** · a [Query.Farm](https://query.farm) VGI worker
 
 [![CI](https://github.com/Query-farm/vgi-fhir/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-fhir/actions/workflows/ci.yml)
 
