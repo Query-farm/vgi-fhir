@@ -53,10 +53,23 @@ jobs:
   # SQL end-to-end: run the sqllogictest suite (test/sql/*.test) against the
   # built Go worker through the real signed `vgi` community DuckDB extension via
   # a prebuilt standalone `haybarn-unittest` — no C++ build. See ci/README.md.
+  #
+  # Transport matrix: the same suite runs over each transport the vgi extension
+  # supports, selected by ci/run-integration.sh's TRANSPORT env var (which
+  # changes what the .test files ATTACH as the worker LOCATION):
+  #   subprocess  worker spawned over stdio (the binary path)
+  #   http        worker started with --http, LOCATION = http://127.0.0.1:<port>
+  #   unix        worker started with --unix <sock>, LOCATION = unix://<sock>
+  # The mock FHIR server is started for ALL transports (the worker's table
+  # functions still query it). See ci/README.md for the per-transport notes.
   integration:
-    name: SQL end-to-end (haybarn)
+    name: SQL E2E (${{ matrix.transport }})
     needs: resolve-haybarn
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        transport: [subprocess, http, unix]
     steps:
       - uses: actions/checkout@v4
 
@@ -88,5 +101,7 @@ jobs:
           echo "HAYBARN_UNITTEST=$UNITTEST" >> "$GITHUB_ENV"
           echo "VGI_FHIR_WORKER=$PWD/vgi-fhir-worker" >> "$GITHUB_ENV"
 
-      - name: Run extension integration suite
+      - name: Run extension integration suite (${{ matrix.transport }})
         run: ci/run-integration.sh
+        env:
+          TRANSPORT: ${{ matrix.transport }}
