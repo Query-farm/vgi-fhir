@@ -105,3 +105,26 @@ jobs:
         run: ci/run-integration.sh
         env:
           TRANSPORT: ${{ matrix.transport }}
+
+  # Metadata quality: build the worker, then run the vgi-lint metadata-quality
+  # linter (it force-installs the signed vgi community extension itself) and fail
+  # on any finding at info or higher. Kept a separate job so the score is visible.
+  metadata-quality:
+    name: Metadata quality (vgi-lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Build the worker
+        run: go build -o vgi-fhir-worker ./cmd/vgi-fhir-worker
+
+      - name: vgi-lint
+        uses: Query-farm/vgi-lint-check@v1
+        with:
+          location: "${{ github.workspace }}/vgi-fhir-worker"
+          fail-on: info

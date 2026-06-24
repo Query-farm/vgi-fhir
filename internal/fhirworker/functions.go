@@ -147,6 +147,22 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 		Description: "Search a FHIR R4 resource type (one row per resource; resource = full JSON; follows Bundle next links)",
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
+		Tags: map[string]string{
+			"vgi.columns_md": "| column | type | description |\n" +
+				"|---|---|---|\n" +
+				"| `id` | VARCHAR | Logical id of the matched FHIR resource. |\n" +
+				"| `resource` | VARCHAR | The full resource as a JSON string. |",
+		},
+		Examples: []vgi.CatalogExample{
+			{
+				SQL:         "SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');",
+				Description: "List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",
+			},
+			{
+				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);",
+				Description: "Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",
+			},
+		},
 	}
 }
 
@@ -222,6 +238,17 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 		Description: "Read a single FHIR R4 resource by id (one row; resource = full JSON)",
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
+		Tags: map[string]string{
+			"vgi.columns_md": "| column | type | description |\n" +
+				"|---|---|---|\n" +
+				"| `resource` | VARCHAR | The requested resource as a JSON string. |",
+		},
+		Examples: []vgi.CatalogExample{
+			{
+				SQL:         "SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', '12345');",
+				Description: "Read the Patient with logical id 12345 and return its full JSON.",
+			},
+		},
 	}
 }
 
@@ -303,6 +330,27 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 		Description: "List FHIR R4 Patients (core fields flattened; raw = full JSON)",
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
+		Tags: map[string]string{
+			"vgi.columns_md": "| column | type | description |\n" +
+				"|---|---|---|\n" +
+				"| `id` | VARCHAR | Logical id of the Patient resource. |\n" +
+				"| `family` | VARCHAR | Family (last) name from the first `name` entry. |\n" +
+				"| `given` | VARCHAR | Given (first) name(s) from the first `name` entry. |\n" +
+				"| `gender` | VARCHAR | Administrative gender (`male`, `female`, `other`, `unknown`). |\n" +
+				"| `birth_date` | VARCHAR | Date of birth (`YYYY-MM-DD` or partial FHIR date). |\n" +
+				"| `active` | BOOLEAN | Whether the Patient record is in active use. |\n" +
+				"| `raw` | VARCHAR | The full Patient resource as a JSON string. |",
+		},
+		Examples: []vgi.CatalogExample{
+			{
+				SQL:         "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');",
+				Description: "List Patients with their core demographic fields flattened into columns.",
+			},
+			{
+				SQL:         "SELECT count(*) FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=smith');",
+				Description: "Count Patients whose family name is 'smith' (across all Bundle pages).",
+			},
+		},
 	}
 }
 
@@ -393,6 +441,29 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 		Description: "List FHIR R4 Observations (valueQuantity flattened; non-numeric values NULL; raw = full JSON)",
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
+		Tags: map[string]string{
+			"vgi.columns_md": "| column | type | description |\n" +
+				"|---|---|---|\n" +
+				"| `id` | VARCHAR | Logical id of the Observation resource. |\n" +
+				"| `status` | VARCHAR | Observation status (`final`, `preliminary`, `amended`, …). |\n" +
+				"| `code` | VARCHAR | Primary observation code (e.g. LOINC code from `code.coding[0]`). |\n" +
+				"| `code_display` | VARCHAR | Human-readable display text for the code. |\n" +
+				"| `value` | DOUBLE | Numeric `valueQuantity.value`; NULL for non-numeric observations. |\n" +
+				"| `unit` | VARCHAR | Unit of the value (`valueQuantity.unit`). |\n" +
+				"| `effective` | VARCHAR | Effective date/time of the observation. |\n" +
+				"| `subject` | VARCHAR | Reference to the subject (usually `Patient/{id}`). |\n" +
+				"| `raw` | VARCHAR | The full Observation resource as a JSON string. |",
+		},
+		Examples: []vgi.CatalogExample{
+			{
+				SQL:         "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;",
+				Description: "List numeric Observations with their code, value, and unit.",
+			},
+			{
+				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=8867-4');",
+				Description: "List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",
+			},
+		},
 	}
 }
 
@@ -492,6 +563,22 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 		Description: "List the resource types and REST interactions from a FHIR R4 server's CapabilityStatement (/metadata)",
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
+		Tags: map[string]string{
+			"vgi.columns_md": "| column | type | description |\n" +
+				"|---|---|---|\n" +
+				"| `resource_type` | VARCHAR | A FHIR resource type the server exposes (e.g. `Patient`). |\n" +
+				"| `interactions` | VARCHAR[] | REST interaction codes supported for that type (e.g. `read`, `search-type`, `create`). |",
+		},
+		Examples: []vgi.CatalogExample{
+			{
+				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+				Description: "List every resource type a FHIR server supports and the REST interactions available for each.",
+			},
+			{
+				SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+				Description: "Expand the supported REST interactions to one row per (resource type, interaction).",
+			},
+		},
 	}
 }
 
