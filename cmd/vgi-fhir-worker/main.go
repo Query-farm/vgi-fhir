@@ -42,7 +42,10 @@ func main() {
 		// license/support tags advertise provenance and support policy; the
 		// description tags drive LLM/agent tool selection and listing pages.
 		vgi.WithCatalogTags(map[string]string{
-			"source": "vgi-fhir",
+			"source":    "vgi-fhir",
+			"vgi.title": "FHIR R4 REST Query Connector",
+			"vgi.keywords": "fhir, hl7, fhir r4, healthcare, ehr, patient, observation, " +
+				"clinical, rest, json, capabilitystatement, interoperability, medical records",
 			"vgi.description_llm": "Query live HL7 FHIR R4 REST servers from SQL. " +
 				"List Patients and Observations with their core demographic and " +
 				"vital-sign fields flattened into columns, run a generic search over " +
@@ -74,12 +77,27 @@ func main() {
 		}),
 		vgi.WithSchemaTags(map[string]map[string]string{
 			"main": {
+				"vgi.title": "FHIR R4 Query Functions",
+				"vgi.keywords": "fhir, fhir r4, patient, observation, search, read, " +
+					"capabilities, capabilitystatement, resource, healthcare, ehr, clinical",
+				// VGI123 classifying tags use BARE keys (not vgi.-namespaced) so the
+				// schema is findable by facet/topic.
+				"domain":         "healthcare",
+				"category":       "interoperability",
+				"topic":          "fhir-r4-rest",
+				"vgi.source_url": "https://github.com/Query-farm/vgi-fhir/blob/main/internal/fhirworker/functions.go",
 				"vgi.description_llm": "FHIR R4 query functions. List Patients and " +
 					"Observations with core fields flattened, search any resource type, " +
 					"read one resource by id, and read a server's CapabilityStatement.",
 				"vgi.description_md": "FHIR R4 query functions over Apache Arrow: " +
 					"`fhir_patients`, `fhir_observations`, `fhir_search`, `fhir_read`, " +
 					"`fhir_capabilities`.",
+				// VGI506 representative example queries for the schema (catalog-qualified).
+				"vgi.example_queries": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
+					"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;\n" +
+					"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');\n" +
+					"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', '12345');\n" +
+					"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
 			},
 		}),
 	)
