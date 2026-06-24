@@ -84,11 +84,26 @@ then `array.NewRecordBatch(schema, []arrow.Array{...}, n)`.
    exported, gob-encodable fields only** — no `arrow.Record`, no interfaces, no
    channels/funcs, no unexported fields (the SDK panics at registration
    otherwise). The pattern every function here uses: fetch the rows eagerly in
-   `NewState`, store them as plain exported Go slices (`Patients []Patient`,
-   `Observations []Observation`, …) plus a `Done bool`, and **rebuild the Arrow
-   batch in `Process`**. The flattened structs in `fhir.go` are deliberately
-   all-exported for this reason. Optional numeric fields are `*float64` so a
-   missing value can round-trip through gob and surface as SQL NULL.
+   `NewState`, store them in an embedded `Cursor[T]{ Rows []T; Offset int }`, and
+   **rebuild the Arrow batch in `Process`**. The flattened structs in `fhir.go`
+   are deliberately all-exported for this reason. Optional numeric fields are
+   `*float64` so a missing value can round-trip through gob and surface as SQL
+   NULL.
+
+   **Streaming state MUST carry an explicit cursor, not a bare `Done bool`**
+   (the HTTP-continuation invariant). Over the **stateless HTTP transport** the
+   worker keeps no live state between `Process` ticks — the framework
+   round-trips the producer state through a continuation token (gob-snapshotting
+   the user state each tick, emitting ≤1 data batch per response, resuming from
+   the token). A `Done` flag flipped *after* the single `Emit` observes the
+   pre-`Emit` snapshot on resume, re-emits the same rows forever, and pins the
+   worker in an infinite loop (subprocess/unix hold live state in memory, so they
+   never hit it). `fhir_patients` / `fhir_search` emit MANY rows (Bundle
+   pagination), so this is mandatory. The fix: the embedded `Cursor[T]` whose
+   `Process` emits a bounded slice from `Offset`, advances `Offset` **before**
+   yielding, and `out.Finish()`es when `Offset >= len(Rows)`. The framework
+   snapshots `Offset` into the token, so HTTP resumes correctly and terminates.
+   `TestCursorSurvivesContinuation` (gob round-trips between ticks) guards this.
 
 2. **`haybarn-unittest` silently SKIPS `require vgi`.** Under haybarn the
    extension is not autoloaded for `require`, so a `.test` using `require vgi`

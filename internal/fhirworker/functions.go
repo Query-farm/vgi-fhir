@@ -20,11 +20,60 @@ const CatalogName = "fhir"
 // structs must therefore hold only EXPORTED, gob-encodable fields — no
 // arrow.Record, no interfaces, channels, funcs, or unexported fields. Each
 // table function fetches its rows eagerly in NewState, stores plain exported Go
-// slices plus a Done flag, and rebuilds the Arrow batch in Process.
+// slices, and rebuilds the Arrow batch in Process.
+//
+// WHY AN EXPLICIT CURSOR, NOT A bool Done (the HTTP-continuation fix):
+//
+// Over the stateless HTTP transport the worker keeps NO live state between
+// Process ticks — the framework round-trips the producer state through an opaque
+// continuation token: after each tick it gob-encodes the LIVE user state, the
+// client returns the token, and the worker resumes by gob-decoding it. The HTTP
+// server emits at most one data batch per response, so a producer with more to
+// emit is always resumed mid-stream from its token.
+//
+// A bare `Done bool` flipped *after* the single Emit does not survive that
+// limit-1 continuation: the resumed tick observes the pre-Emit snapshot,
+// re-emits the same rows, and the scan never terminates — an infinite loop that
+// pins the worker (subprocess/unix hold live state in memory, so they never hit
+// it). The fix is an explicit cursor: each state embeds Cursor[T] carrying the
+// fetched Rows plus the Offset of the next unemitted row. Process emits a
+// bounded slice from Offset, advances Offset BEFORE yielding, and Finish()es
+// once Offset >= len(Rows). The framework snapshots Offset into the token, so
+// HTTP resumes correctly and terminates. This is the reference pattern for every
+// streaming Go table function over HTTP. fhir_patients/fhir_search/etc. each
+// emit MANY rows (Bundle pagination), so the cursor is mandatory, not cosmetic.
 
-// emitState carries the "already emitted" flag shared by the table functions.
-type emitState struct {
-	Done bool
+// rowsPerTick bounds how many rows each Process tick emits. Emitting a bounded
+// slice and advancing the cursor is what makes the offset observable across the
+// HTTP continuation boundary (and scales to large result sets).
+const rowsPerTick = 64
+
+// Cursor is the shared streaming cursor embedded by every table-function state:
+// the eagerly fetched rows plus the offset of the next unemitted row. Both
+// fields are exported so gob round-trips them through the HTTP continuation
+// token. The TYPE is exported (Cursor, not cursor) because the SDK counts a
+// state struct's exported FIELDS at registration to verify it is gob-encodable —
+// an embedded field named after an unexported type would not be counted and the
+// worker would panic at startup.
+type Cursor[T any] struct {
+	Rows   []T
+	Offset int
+}
+
+// nextSlice returns the next bounded slice of rows to emit and advances the
+// cursor past them. It reports done=true once all rows have been consumed, at
+// which point Process should call out.Finish().
+func (c *Cursor[T]) nextSlice() (slice []T, done bool) {
+	if c.Offset >= len(c.Rows) {
+		return nil, true
+	}
+	end := c.Offset + rowsPerTick
+	if end > len(c.Rows) {
+		end = len(c.Rows)
+	}
+	slice = c.Rows[c.Offset:end]
+	c.Offset = end
+	return slice, false
 }
 
 // optsFrom builds FetchOptions from the bound common arguments. query/token are
@@ -83,8 +132,7 @@ type searchArgs struct {
 }
 
 type searchState struct {
-	emitState
-	Resources []Resource
+	Cursor[Resource]
 }
 
 // SearchFunction lists resources of one type via a FHIR search.
@@ -121,15 +169,14 @@ func (f *SearchFunction) NewState(params *vgi.ProcessParams) (*searchState, erro
 	if err != nil {
 		return nil, err
 	}
-	return &searchState{Resources: res}, nil
+	return &searchState{Cursor[Resource]{Rows: res}}, nil
 }
 
 func (f *SearchFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *searchState, out *vgirpc.OutputCollector) error {
-	if state.Done {
+	r, done := state.nextSlice()
+	if done {
 		return out.Finish()
 	}
-	state.Done = true
-	r := state.Resources
 	n := int64(len(r))
 	batch := array.NewRecordBatch(searchSchema, []arrow.Array{
 		vgi.BuildStringArray(n, func(i int64) string { return r[i].ID }),
@@ -160,9 +207,7 @@ type readArgs struct {
 }
 
 type readState struct {
-	emitState
-	Resource string
-	Found    bool
+	Cursor[string]
 }
 
 // ReadFunction reads a single resource by id.
@@ -199,20 +244,17 @@ func (f *ReadFunction) NewState(params *vgi.ProcessParams) (*readState, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &readState{Resource: string(raw), Found: true}, nil
+	return &readState{Cursor[string]{Rows: []string{string(raw)}}}, nil
 }
 
 func (f *ReadFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *readState, out *vgirpc.OutputCollector) error {
-	if state.Done {
+	r, done := state.nextSlice()
+	if done {
 		return out.Finish()
 	}
-	state.Done = true
-	var n int64
-	if state.Found {
-		n = 1
-	}
+	n := int64(len(r))
 	batch := array.NewRecordBatch(readSchema, []arrow.Array{
-		vgi.BuildStringArray(n, func(i int64) string { return state.Resource }),
+		vgi.BuildStringArray(n, func(i int64) string { return r[i] }),
 	}, n)
 	defer batch.Release()
 	return out.Emit(batch)
@@ -246,8 +288,7 @@ type patientsArgs struct {
 }
 
 type patientsState struct {
-	emitState
-	Patients []Patient
+	Cursor[Patient]
 }
 
 // PatientsFunction lists Patients with core fields flattened.
@@ -284,15 +325,14 @@ func (f *PatientsFunction) NewState(params *vgi.ProcessParams) (*patientsState, 
 	if err != nil {
 		return nil, err
 	}
-	return &patientsState{Patients: patients}, nil
+	return &patientsState{Cursor[Patient]{Rows: patients}}, nil
 }
 
 func (f *PatientsFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *patientsState, out *vgirpc.OutputCollector) error {
-	if state.Done {
+	p, done := state.nextSlice()
+	if done {
 		return out.Finish()
 	}
-	state.Done = true
-	p := state.Patients
 	n := int64(len(p))
 	batch := array.NewRecordBatch(patientsSchema, []arrow.Array{
 		vgi.BuildStringArray(n, func(i int64) string { return p[i].ID }),
@@ -338,8 +378,7 @@ type observationsArgs struct {
 }
 
 type observationsState struct {
-	emitState
-	Observations []Observation
+	Cursor[Observation]
 }
 
 // ObservationsFunction lists Observations with core fields flattened.
@@ -378,15 +417,14 @@ func (f *ObservationsFunction) NewState(params *vgi.ProcessParams) (*observation
 	if err != nil {
 		return nil, err
 	}
-	return &observationsState{Observations: obs}, nil
+	return &observationsState{Cursor[Observation]{Rows: obs}}, nil
 }
 
 func (f *ObservationsFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *observationsState, out *vgirpc.OutputCollector) error {
-	if state.Done {
+	o, done := state.nextSlice()
+	if done {
 		return out.Finish()
 	}
-	state.Done = true
-	o := state.Observations
 	n := int64(len(o))
 	batch := array.NewRecordBatch(observationsSchema, []arrow.Array{
 		vgi.BuildStringArray(n, func(i int64) string { return o[i].ID }),
@@ -439,8 +477,7 @@ type capabilitiesArgs struct {
 }
 
 type capabilitiesState struct {
-	emitState
-	Resources []CapabilityResource
+	Cursor[CapabilityResource]
 }
 
 // CapabilitiesFunction parses the server CapabilityStatement.
@@ -479,15 +516,14 @@ func (f *CapabilitiesFunction) NewState(params *vgi.ProcessParams) (*capabilitie
 	if err != nil {
 		return nil, err
 	}
-	return &capabilitiesState{Resources: res}, nil
+	return &capabilitiesState{Cursor[CapabilityResource]{Rows: res}}, nil
 }
 
 func (f *CapabilitiesFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *capabilitiesState, out *vgirpc.OutputCollector) error {
-	if state.Done {
+	r, done := state.nextSlice()
+	if done {
 		return out.Finish()
 	}
-	state.Done = true
-	r := state.Resources
 	n := int64(len(r))
 	batch := array.NewRecordBatch(capabilitiesSchema, []arrow.Array{
 		vgi.BuildStringArray(n, func(i int64) string { return r[i].ResourceType }),
