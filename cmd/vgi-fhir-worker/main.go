@@ -46,7 +46,7 @@ func main() {
 			"vgi.title": "FHIR R4 REST Query Connector",
 			"vgi.keywords": "fhir, hl7, fhir r4, healthcare, ehr, patient, observation, " +
 				"clinical, rest, json, capabilitystatement, interoperability, medical records",
-			"vgi.description_llm": "Query live HL7 FHIR R4 REST servers from SQL. " +
+			"vgi.doc_llm": "Query live HL7 FHIR R4 REST servers from SQL. " +
 				"List Patients and Observations with their core demographic and " +
 				"vital-sign fields flattened into columns, run a generic search over " +
 				"any FHIR resource type, read a single resource by id, and inspect a " +
@@ -54,7 +54,7 @@ func main() {
 				"interactions it supports). Use to answer questions about patients, " +
 				"clinical observations, and the capabilities of an EHR/FHIR endpoint " +
 				"without leaving SQL; every function also returns the full resource JSON.",
-			"vgi.description_md": "# fhir\n\n" +
+			"vgi.doc_md": "# fhir\n\n" +
 				"Query [HL7 FHIR R4](https://hl7.org/fhir/R4/) REST servers over " +
 				"plain REST/JSON and return resources as DuckDB rows.\n\n" +
 				"Table functions: `fhir_patients`, `fhir_observations`, `fhir_search`, " +
@@ -86,17 +86,42 @@ func main() {
 				"category":       "interoperability",
 				"topic":          "fhir-r4-rest",
 				"vgi.source_url": "https://github.com/Query-farm/vgi-fhir/blob/main/internal/fhirworker/functions.go",
-				"vgi.description_llm": "FHIR R4 query functions. List Patients and " +
-					"Observations with core fields flattened, search any resource type, " +
-					"read one resource by id, and read a server's CapabilityStatement.",
-				"vgi.description_md": "FHIR R4 query functions over Apache Arrow: " +
-					"`fhir_patients`, `fhir_observations`, `fhir_search`, `fhir_read`, " +
-					"`fhir_capabilities`.",
+				"vgi.doc_llm": "The `main` schema contains the FHIR R4 query " +
+					"functions of the vgi-fhir connector. Use it when a question is " +
+					"about patients, clinical observations, or what a FHIR/EHR endpoint " +
+					"can do. Every function's first argument is the FHIR R4 service base " +
+					"URL (e.g. `https://hapi.fhir.org/baseR4`); an optional `token` " +
+					"argument carries an OAuth bearer token. `fhir_patients` and " +
+					"`fhir_observations` flatten the most-used fields into columns while " +
+					"still returning the raw resource JSON; `fhir_search` works for any " +
+					"resource type; `fhir_read` fetches one resource by id; and " +
+					"`fhir_capabilities` lists the supported resource types and REST " +
+					"interactions from the server's CapabilityStatement. Bundle pages are " +
+					"followed automatically, so result sets span all `next` links.",
+				"vgi.doc_md": "## FHIR R4 Query Functions\n\n" +
+					"This schema groups every table function exposed by the **vgi-fhir** " +
+					"connector. Each function takes a FHIR R4 service *base URL* as its " +
+					"first argument and returns resources as DuckDB rows over Apache " +
+					"Arrow.\n\n" +
+					"| Function | Purpose |\n" +
+					"|---|---|\n" +
+					"| `fhir_patients` | List Patients with core demographics flattened. |\n" +
+					"| `fhir_observations` | List Observations with `valueQuantity` flattened. |\n" +
+					"| `fhir_search` | Generic search over any resource type. |\n" +
+					"| `fhir_read` | Read a single resource by logical id. |\n" +
+					"| `fhir_capabilities` | Inspect the server's CapabilityStatement. |\n\n" +
+					"### Notes\n\n" +
+					"- Bundle pagination (`link[].relation == \"next\"`) is followed " +
+					"automatically up to a safety cap.\n" +
+					"- The flattened functions also expose the untouched resource JSON " +
+					"(`raw` / `resource`) so nothing is lost.\n" +
+					"- An optional `token` named argument supplies an OAuth bearer token " +
+					"for protected endpoints.",
 				// VGI506 representative example queries for the schema (catalog-qualified).
 				"vgi.example_queries": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
 					"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;\n" +
 					"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');\n" +
-					"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', '12345');\n" +
+					"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');\n" +
 					"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
 			},
 		}),
