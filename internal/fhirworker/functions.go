@@ -48,16 +48,13 @@ const CatalogName = "fhir"
 // HTTP continuation boundary (and scales to large result sets).
 const rowsPerTick = 64
 
-// sourceBase is the canonical GitHub blob URL for the file implementing every
-// table function in this package; per-object vgi.source_url tags point at it.
-const sourceBase = "https://github.com/Query-farm/vgi-fhir/blob/main/internal/fhirworker/functions.go"
-
-// The five standard per-object discovery/description tags the vgi-lint strict
+// The four standard per-object discovery/description tags the vgi-lint strict
 // profile expects on every function — vgi.title (VGI124), vgi.doc_llm
-// (VGI112), vgi.doc_md (VGI113), vgi.keywords (VGI126), and
-// vgi.source_url (VGI128) — are set inline in each function's Metadata().Tags
-// (all point vgi.source_url at sourceBase). Each vgi.title is a multi-word human
-// display name so it does not normalize-equal the machine function name (VGI125).
+// (VGI112), vgi.doc_md (VGI113), and vgi.keywords (VGI126) — are set inline in
+// each function's Metadata().Tags. Each vgi.title is a multi-word human display
+// name so it does not normalize-equal the machine function name (VGI125).
+// Per-object vgi.source_url is intentionally NOT set (VGI139): source_url
+// belongs only on the catalog object (CatalogInfo.SourceURL in main.go).
 
 // executableExamples (VGI509) is a JSON list of self-contained, catalog-qualified
 // examples an agent can run as-is against an attached worker. The base URL points
@@ -199,8 +196,7 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				"- The `resource` column holds the complete resource JSON, so any " +
 				"field not surfaced by the flattened functions is still reachable via " +
 				"`json_extract`.",
-			"vgi.keywords":   "fhir search, search resources, resource type, bundle, paging, query, patient, observation, condition",
-			"vgi.source_url": sourceBase,
+			"vgi.keywords": `["fhir","search","search resources","resource type","bundle","paging","query","patient","observation","condition"]`,
 			"vgi.result_columns_md": "| column | type | description |\n" +
 				"|---|---|---|\n" +
 				"| `id` | VARCHAR | Logical id of the matched FHIR resource. |\n" +
@@ -308,8 +304,7 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 				"resource (HTTP 404) surfaces as a query error rather than an empty " +
 				"result.\n" +
 				"- Supply `token` for endpoints that require authentication.",
-			"vgi.keywords":   "fhir read, read resource, get by id, single resource, logical id, resource json",
-			"vgi.source_url": sourceBase,
+			"vgi.keywords": `["fhir","read","read resource","get by id","single resource","logical id","resource json"]`,
 			"vgi.result_columns_md": "| column | type | description |\n" +
 				"|---|---|---|\n" +
 				"| `resource` | VARCHAR | The requested resource as a JSON string. |",
@@ -420,8 +415,7 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				"followed automatically).\n" +
 				"- The `raw` column carries the untouched Patient JSON for fields not " +
 				"flattened here.",
-			"vgi.keywords":   "fhir patients, patient, demographics, name, gender, birth date, list patients, flatten, ehr",
-			"vgi.source_url": sourceBase,
+			"vgi.keywords": `["fhir","patients","patient","demographics","name","gender","birth date","list patients","flatten","ehr"]`,
 			"vgi.result_columns_md": "| column | type | description |\n" +
 				"|---|---|---|\n" +
 				"| `id` | VARCHAR | Logical id of the Patient resource. |\n" +
@@ -553,8 +547,7 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 				"string results) surface a **NULL** `value` rather than `0`.\n" +
 				"- The `raw` column preserves the full Observation JSON, including " +
 				"components and reference ranges.",
-			"vgi.keywords":   "fhir observations, observation, vital signs, loinc, value, unit, measurement, lab, clinical",
-			"vgi.source_url": sourceBase,
+			"vgi.keywords": `["fhir","observations","observation","vital signs","loinc","value","unit","measurement","lab","clinical"]`,
 			"vgi.result_columns_md": "| column | type | description |\n" +
 				"|---|---|---|\n" +
 				"| `id` | VARCHAR | Logical id of the Observation resource. |\n" +
@@ -694,8 +687,7 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 				"(resource type, interaction) pair.\n" +
 				"- Use this first to discover what an unfamiliar EHR/FHIR endpoint " +
 				"supports before querying specific resource types.",
-			"vgi.keywords":   "fhir capabilities, capabilitystatement, metadata, supported resources, rest interactions, conformance, server discovery",
-			"vgi.source_url": sourceBase,
+			"vgi.keywords": `["fhir","capabilities","capabilitystatement","metadata","supported resources","rest interactions","conformance","server discovery"]`,
 			"vgi.result_columns_md": "| column | type | description |\n" +
 				"|---|---|---|\n" +
 				"| `resource_type` | VARCHAR | A FHIR resource type the server exposes (e.g. `Patient`). |\n" +

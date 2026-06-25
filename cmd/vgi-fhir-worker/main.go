@@ -44,8 +44,9 @@ func main() {
 		vgi.WithCatalogTags(map[string]string{
 			"source":    "vgi-fhir",
 			"vgi.title": "FHIR R4 REST Query Connector",
-			"vgi.keywords": "fhir, hl7, fhir r4, healthcare, ehr, patient, observation, " +
-				"clinical, rest, json, capabilitystatement, interoperability, medical records",
+			"vgi.keywords": `["fhir","hl7","fhir r4","healthcare","ehr","patient",` +
+				`"observation","clinical","rest","json","capabilitystatement",` +
+				`"interoperability","medical records"]`,
 			"vgi.doc_llm": "Query live HL7 FHIR R4 REST servers from SQL. " +
 				"List Patients and Observations with their core demographic and " +
 				"vital-sign fields flattened into columns, run a generic search over " +
@@ -78,14 +79,16 @@ func main() {
 		vgi.WithSchemaTags(map[string]map[string]string{
 			"main": {
 				"vgi.title": "FHIR R4 Query Functions",
-				"vgi.keywords": "fhir, fhir r4, patient, observation, search, read, " +
-					"capabilities, capabilitystatement, resource, healthcare, ehr, clinical",
+				"vgi.keywords": `["fhir","fhir r4","patient","observation","search",` +
+					`"read","capabilities","capabilitystatement","resource",` +
+					`"healthcare","ehr","clinical"]`,
 				// VGI123 classifying tags use BARE keys (not vgi.-namespaced) so the
 				// schema is findable by facet/topic.
-				"domain":         "healthcare",
-				"category":       "interoperability",
-				"topic":          "fhir-r4-rest",
-				"vgi.source_url": "https://github.com/Query-farm/vgi-fhir/blob/main/internal/fhirworker/functions.go",
+				"domain":   "healthcare",
+				"category": "interoperability",
+				"topic":    "fhir-r4-rest",
+				// Per-object vgi.source_url is intentionally omitted (VGI139):
+				// source_url belongs only on the catalog object (CatalogInfo.SourceURL).
 				"vgi.doc_llm": "The `main` schema contains the FHIR R4 query " +
 					"functions of the vgi-fhir connector. Use it when a question is " +
 					"about patients, clinical observations, or what a FHIR/EHR endpoint " +
