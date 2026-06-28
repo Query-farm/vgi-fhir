@@ -1,0 +1,20 @@
+name: Release binaries
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  release:
+    needs: [ci]
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    uses: Query-farm/vgi-actions/.github/workflows/go-release.yml@v1
+    secrets: inherit
+    with:
+      package: ./cmd/vgi-fhir-worker
