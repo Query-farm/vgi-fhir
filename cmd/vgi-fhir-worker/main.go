@@ -56,6 +56,7 @@ func main() {
 				"clinical observations, and the capabilities of an EHR/FHIR endpoint " +
 				"without leaving SQL; every function also returns the full resource JSON.",
 			"vgi.doc_md": "# FHIR R4 in SQL\n\n" +
+				"![HL7 FHIR logo](https://hl7.org/fhir/assets/images/fhir-logo-www.png)\n\n" +
 				"**Query live HL7 FHIR R4 healthcare APIs directly from SQL** — turn any " +
 				"FHIR REST server into DuckDB tables and run analytics over patients, " +
 				"clinical observations, and server capabilities without writing a line " +
