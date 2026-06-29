@@ -55,12 +55,48 @@ func main() {
 				"interactions it supports). Use to answer questions about patients, " +
 				"clinical observations, and the capabilities of an EHR/FHIR endpoint " +
 				"without leaving SQL; every function also returns the full resource JSON.",
-			"vgi.doc_md": "# fhir\n\n" +
-				"Query [HL7 FHIR R4](https://hl7.org/fhir/R4/) REST servers over " +
-				"plain REST/JSON and return resources as DuckDB rows.\n\n" +
-				"Table functions: `fhir_patients`, `fhir_observations`, `fhir_search`, " +
-				"`fhir_read`, `fhir_capabilities`. Bundle pagination (`next` links) is " +
-				"followed automatically; flattened functions also expose the raw JSON.",
+			"vgi.doc_md": "# FHIR R4 in SQL\n\n" +
+				"**Query live HL7 FHIR R4 healthcare APIs directly from SQL** — turn any " +
+				"FHIR REST server into DuckDB tables and run analytics over patients, " +
+				"clinical observations, and server capabilities without writing a line " +
+				"of integration code.\n\n" +
+				"The `fhir` catalog connects to any [HL7 FHIR R4](https://hl7.org/fhir/R4/) " +
+				"endpoint over plain REST/JSON and streams the resources back as DuckDB " +
+				"rows over Apache Arrow. FHIR (Fast Healthcare Interoperability Resources) " +
+				"is the modern HL7 standard that powers EHR, EMR, and health-data " +
+				"interoperability across hospitals, payers, and digital-health platforms. " +
+				"This connector is for analysts, data engineers, and clinical-informatics " +
+				"teams who want to explore, validate, or extract FHIR data with familiar " +
+				"SQL instead of bespoke API clients — point a function at a service base " +
+				"URL (for example `https://hapi.fhir.org/baseR4`) and start querying.\n\n" +
+				"Under the hood the worker speaks the FHIR R4 [RESTful API]" +
+				"(https://hl7.org/fhir/R4/http.html) using nothing but the Go standard " +
+				"library, so it stays light and dependency-free while remaining faithful " +
+				"to the published [FHIR R4 specification](https://hl7.org/fhir/R4/) (build " +
+				"source at [HL7/fhir on GitHub](https://github.com/HL7/fhir)). It follows " +
+				"FHIR [search](https://hl7.org/fhir/R4/search.html) Bundle pagination " +
+				"automatically — every `link[].relation == \"next\"` page is fetched up to " +
+				"a safety cap — so a single query transparently spans many result pages. " +
+				"An optional OAuth bearer `token` argument unlocks protected endpoints, " +
+				"and non-2xx responses (including FHIR `OperationOutcome` bodies) surface " +
+				"as clean SQL errors rather than panics.\n\n" +
+				"The catalog exposes five table functions. `fhir_patients` lists Patient " +
+				"resources with core demographics (id, family/given name, gender, " +
+				"birth_date) flattened into columns; `fhir_observations` lists Observations " +
+				"with the `valueQuantity` (code, value, unit) flattened, emitting SQL NULL " +
+				"for non-numeric results. `fhir_search` runs a generic search over **any** " +
+				"resource type (Condition, Encounter, MedicationRequest, …) with an " +
+				"optional raw query string and `_count` page size. `fhir_read` fetches a " +
+				"single resource by logical id, and `fhir_capabilities` inspects the " +
+				"server's [CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html) " +
+				"to list which resource types and REST interactions an endpoint supports. " +
+				"The flattened functions always return the untouched resource JSON " +
+				"alongside the typed columns, so nothing is lost. Built on the " +
+				"[vgi-go](https://github.com/Query-farm/vgi-go) SDK.\n\n" +
+				"```sql\n" +
+				"SELECT id, family, given, gender, birth_date\n" +
+				"FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
+				"```",
 			"vgi.author":             "Query.Farm",
 			"vgi.copyright":          "Copyright 2026 Query Farm LLC - https://query.farm",
 			"vgi.license":            "MIT",
