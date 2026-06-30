@@ -3,7 +3,7 @@ module github.com/Query-farm/vgi-fhir
 go 1.25.0
 
 require (
-	github.com/Query-farm/vgi-go v0.7.0
+	github.com/Query-farm/vgi-go v0.8.0
 	github.com/Query-farm/vgi-rpc-go v0.10.0
 	github.com/apache/arrow-go/v18 v18.5.2
 )

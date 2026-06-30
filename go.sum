@@ -1,5 +1,7 @@
 github.com/Query-farm/vgi-go v0.7.0 h1:AFc0NHvNU2ppd4e5zyMpLir+x+dphH56+slyWh+tP/o=
 github.com/Query-farm/vgi-go v0.7.0/go.mod h1:amfpB2B25yMrfF+RDv++NY+aPsSJV64CJGe1tnc5Xg4=
+github.com/Query-farm/vgi-go v0.8.0 h1:IEGnZ+XufveSEIfCK4bATV5Eh1GH38G95TzMREmD/zM=
+github.com/Query-farm/vgi-go v0.8.0/go.mod h1:amfpB2B25yMrfF+RDv++NY+aPsSJV64CJGe1tnc5Xg4=
 github.com/Query-farm/vgi-rpc-go v0.10.0 h1:ddteS2eF/F8Y7ZeyOfRpwjYosVv3MTTyad9U57RuaTs=
 github.com/Query-farm/vgi-rpc-go v0.10.0/go.mod h1:XbQBjp31eFKIZaBqmg0q9r2Mxp/LTPeAG97w1qy5gmI=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
