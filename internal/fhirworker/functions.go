@@ -61,8 +61,8 @@ const rowsPerTick = 64
 // at the public HAPI FHIR R4 test server; expected_result is omitted on purpose.
 const executableExamples = `[
   {
-    "description": "List Patients with core demographic fields flattened into columns.",
-    "sql": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4')"
+    "description": "List Patients (filtered to one family so the example returns a single fast page) with core demographic fields flattened into columns.",
+    "sql": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers')"
   },
   {
     "description": "List numeric Observations with their code, value, and unit.",
@@ -178,8 +178,9 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
 		Tags: map[string]string{
-			"vgi.title":   "Search FHIR Resource Type",
-			"vgi.doc_llm": "Search a single FHIR R4 resource type via the server's search endpoint, following Bundle next links across pages. Returns one row per matched resource with its logical id and the full resource as a JSON string. Use for any resource type (Patient, Observation, Condition, ...) with an optional raw search query and page size.",
+			"vgi.title":    "Search FHIR Resource Type",
+			"vgi.category": "Generic Resource Access",
+			"vgi.doc_llm":  "Search a single FHIR R4 resource type via the server's search endpoint, following Bundle next links across pages. Returns one row per matched resource with its logical id and the full resource as a JSON string. Use for any resource type (Patient, Observation, Condition, ...) with an optional raw search query and page size.",
 			"vgi.doc_md": "## fhir_search\n\n" +
 				"Run a FHIR R4 [search](https://hl7.org/fhir/R4/search.html) over a " +
 				"single resource type and return one row per matched resource.\n\n" +
@@ -288,8 +289,9 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
 		Tags: map[string]string{
-			"vgi.title":   "Read FHIR Resource By Id",
-			"vgi.doc_llm": "Read a single FHIR R4 resource by its resource type and logical id (a GET on /{type}/{id}). Returns one row with the full resource as a JSON string; a missing resource surfaces as an error.",
+			"vgi.title":    "Read FHIR Resource By Id",
+			"vgi.category": "Generic Resource Access",
+			"vgi.doc_llm":  "Read a single FHIR R4 resource by its resource type and logical id (a GET on /{type}/{id}). Returns one row with the full resource as a JSON string; a missing resource surfaces as an error.",
 			"vgi.doc_md": "## fhir_read\n\n" +
 				"Read a single FHIR R4 resource by its type and logical id — a direct " +
 				"`GET /{type}/{id}` against the server (the FHIR " +
@@ -397,8 +399,9 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
 		Tags: map[string]string{
-			"vgi.title":   "List FHIR Patient Resources",
-			"vgi.doc_llm": "List FHIR R4 Patient resources with their core demographic fields (family/given name, gender, birth date, active) flattened into columns, plus the full Patient resource as JSON. Follows Bundle next links and accepts an optional raw search query.",
+			"vgi.title":    "List FHIR Patient Resources",
+			"vgi.category": "Clinical Data",
+			"vgi.doc_llm":  "List FHIR R4 Patient resources with their core demographic fields (family/given name, gender, birth date, active) flattened into columns, plus the full Patient resource as JSON. Follows Bundle next links and accepts an optional raw search query.",
 			"vgi.doc_md": "## fhir_patients\n\n" +
 				"List [Patient](https://hl7.org/fhir/R4/patient.html) resources from a " +
 				"FHIR R4 server with the most-used demographic fields flattened into " +
@@ -527,8 +530,9 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
 		Tags: map[string]string{
-			"vgi.title":   "List FHIR Observation Resources",
-			"vgi.doc_llm": "List FHIR R4 Observation resources with their valueQuantity flattened into numeric value plus unit, alongside status, code, display, effective time, and subject reference. Non-numeric observations surface a NULL value. Follows Bundle next links and accepts an optional search query.",
+			"vgi.title":    "List FHIR Observation Resources",
+			"vgi.category": "Clinical Data",
+			"vgi.doc_llm":  "List FHIR R4 Observation resources with their valueQuantity flattened into numeric value plus unit, alongside status, code, display, effective time, and subject reference. Non-numeric observations surface a NULL value. Follows Bundle next links and accepts an optional search query.",
 			"vgi.doc_md": "## fhir_observations\n\n" +
 				"List [Observation](https://hl7.org/fhir/R4/observation.html) resources " +
 				"from a FHIR R4 server with the `valueQuantity` flattened into a numeric " +
@@ -670,8 +674,9 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 		Stability:   vgi.StabilityVolatile,
 		Categories:  []string{"fhir", "healthcare"},
 		Tags: map[string]string{
-			"vgi.title":   "Read FHIR Server Capabilities",
-			"vgi.doc_llm": "Read a FHIR R4 server's CapabilityStatement (/metadata) and list each resource type it exposes together with the REST interactions supported for that type (read, search-type, create, ...). Use to discover what an EHR/FHIR endpoint can do before querying it.",
+			"vgi.title":    "Read FHIR Server Capabilities",
+			"vgi.category": "Server Discovery",
+			"vgi.doc_llm":  "Read a FHIR R4 server's CapabilityStatement (/metadata) and list each resource type it exposes together with the REST interactions supported for that type (read, search-type, create, ...). Use to discover what an EHR/FHIR endpoint can do before querying it.",
 			"vgi.doc_md": "## fhir_capabilities\n\n" +
 				"Read a server's " +
 				"[CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html) " +

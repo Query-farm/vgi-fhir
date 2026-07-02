@@ -14,3 +14,6 @@ coverage.out
 # Editor / OS cruft
 .DS_Store
 /.tmpbin/
+
+# vgi-lint AI verdict cache
+.vgi-*-cache.json

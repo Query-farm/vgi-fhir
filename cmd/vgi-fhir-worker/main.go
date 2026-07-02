@@ -81,18 +81,17 @@ func main() {
 				"An optional OAuth bearer `token` argument unlocks protected endpoints, " +
 				"and non-2xx responses (including FHIR `OperationOutcome` bodies) surface " +
 				"as clean SQL errors rather than panics.\n\n" +
-				"The catalog exposes five table functions. `fhir_patients` lists Patient " +
-				"resources with core demographics (id, family/given name, gender, " +
-				"birth_date) flattened into columns; `fhir_observations` lists Observations " +
-				"with the `valueQuantity` (code, value, unit) flattened, emitting SQL NULL " +
-				"for non-numeric results. `fhir_search` runs a generic search over **any** " +
-				"resource type (Condition, Encounter, MedicationRequest, …) with an " +
-				"optional raw query string and `_count` page size. `fhir_read` fetches a " +
-				"single resource by logical id, and `fhir_capabilities` inspects the " +
-				"server's [CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html) " +
-				"to list which resource types and REST interactions an endpoint supports. " +
-				"The flattened functions always return the untouched resource JSON " +
-				"alongside the typed columns, so nothing is lost. Built on the " +
+				"The connector turns a FHIR endpoint's core capabilities into SQL: pull " +
+				"clinical resources with their most-used fields flattened into typed " +
+				"columns, run a generic search across any resource type (Condition, " +
+				"Encounter, MedicationRequest, …) with an optional raw query string and " +
+				"`_count` page size, read an individual resource by its logical id, and " +
+				"discover which resource types and REST interactions a server supports " +
+				"from its [CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html). " +
+				"Flattened results always carry the untouched resource JSON alongside the " +
+				"typed columns, so nothing is lost — anything not surfaced as a column is " +
+				"still reachable with `json_extract`. List the `main` schema to discover " +
+				"the exact functions and their signatures. Built on the " +
 				"[vgi-go](https://github.com/Query-farm/vgi-go) SDK.\n\n" +
 				"```sql\n" +
 				"SELECT id, family, given, gender, birth_date\n" +
@@ -103,6 +102,16 @@ func main() {
 			"vgi.license":            "MIT",
 			"vgi.support_contact":    "https://github.com/Query-farm/vgi-fhir/issues",
 			"vgi.support_policy_url": "https://github.com/Query-farm/vgi-fhir/blob/main/README.md",
+			// VGI152 agent-check suite: natural-language analyst tasks that
+			// `vgi-lint simulate` runs to measure how well an agent uses this
+			// worker. Each task names the public HAPI FHIR R4 test server as the
+			// base URL and pairs a prompt with the canonical answer SQL.
+			"vgi.agent_test_tasks": `[` +
+				`{"name":"list_patient_names","prompt":"Using the FHIR R4 server at https://hapi.fhir.org/baseR4, list the family and given names of the patients whose family name is Chalmers.","reference_sql":"SELECT family, given FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers');"},` +
+				`{"name":"numeric_observations","prompt":"From the FHIR R4 server at https://hapi.fhir.org/baseR4, show the code, numeric value, and unit for observations that carry a numeric measurement.","reference_sql":"SELECT code, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
+				`{"name":"search_conditions","prompt":"List the logical ids of the Condition resources available on the FHIR R4 server at https://hapi.fhir.org/baseR4.","reference_sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
+				`{"name":"server_resource_types","prompt":"Read the capability statement of the FHIR R4 server at https://hapi.fhir.org/baseR4 and list the resource types it advertises.","reference_sql":"SELECT resource_type FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+				`]`,
 		}),
 		vgi.WithCatalogInfo(vgi.CatalogInfo{
 			Name:      fhirworker.CatalogName,
@@ -116,6 +125,13 @@ func main() {
 		vgi.WithSchemaTags(map[string]map[string]string{
 			"main": {
 				"vgi.title": "FHIR R4 Query Functions",
+				// VGI413 ordered category registry; each function carries a
+				// matching vgi.category tag naming one of these.
+				"vgi.categories": `[` +
+					`{"name":"Clinical Data","description":"Clinical resources (Patients, Observations) with their most-used fields flattened into typed columns."},` +
+					`{"name":"Generic Resource Access","description":"Search any FHIR resource type or read a single resource by its logical id, returning the raw resource JSON."},` +
+					`{"name":"Server Discovery","description":"Inspect a FHIR server's CapabilityStatement to see which resource types and REST interactions it supports."}` +
+					`]`,
 				"vgi.keywords": `["fhir","fhir r4","patient","observation","search",` +
 					`"read","capabilities","capabilitystatement","resource",` +
 					`"healthcare","ehr","clinical"]`,
@@ -126,30 +142,32 @@ func main() {
 				"topic":    "fhir-r4-rest",
 				// Per-object vgi.source_url is intentionally omitted (VGI139):
 				// source_url belongs only on the catalog object (CatalogInfo.SourceURL).
-				"vgi.doc_llm": "The `main` schema contains the FHIR R4 query " +
-					"functions of the vgi-fhir connector. Use it when a question is " +
+				"vgi.doc_llm": "The `main` schema holds the FHIR R4 query " +
+					"functions of the vgi-fhir connector. Reach for it when a question is " +
 					"about patients, clinical observations, or what a FHIR/EHR endpoint " +
 					"can do. Every function's first argument is the FHIR R4 service base " +
 					"URL (e.g. `https://hapi.fhir.org/baseR4`); an optional `token` " +
-					"argument carries an OAuth bearer token. `fhir_patients` and " +
-					"`fhir_observations` flatten the most-used fields into columns while " +
-					"still returning the raw resource JSON; `fhir_search` works for any " +
-					"resource type; `fhir_read` fetches one resource by id; and " +
-					"`fhir_capabilities` lists the supported resource types and REST " +
-					"interactions from the server's CapabilityStatement. Bundle pages are " +
-					"followed automatically, so result sets span all `next` links.",
+					"argument carries an OAuth bearer token. The functions cover the " +
+					"common ways to pull data from a FHIR endpoint: flattening the " +
+					"most-used fields of a clinical resource into typed columns (while " +
+					"still returning the raw resource JSON), running a generic search " +
+					"over any resource type, fetching a single resource by logical id, " +
+					"and reporting the resource types and REST interactions a server " +
+					"supports from its CapabilityStatement. Bundle pages are followed " +
+					"automatically, so result sets span all `next` links. List the schema " +
+					"to see the exact functions and their signatures.",
 				"vgi.doc_md": "## FHIR R4 Query Functions\n\n" +
 					"This schema groups every table function exposed by the **vgi-fhir** " +
 					"connector. Each function takes a FHIR R4 service *base URL* as its " +
 					"first argument and returns resources as DuckDB rows over Apache " +
 					"Arrow.\n\n" +
-					"| Function | Purpose |\n" +
-					"|---|---|\n" +
-					"| `fhir_patients` | List Patients with core demographics flattened. |\n" +
-					"| `fhir_observations` | List Observations with `valueQuantity` flattened. |\n" +
-					"| `fhir_search` | Generic search over any resource type. |\n" +
-					"| `fhir_read` | Read a single resource by logical id. |\n" +
-					"| `fhir_capabilities` | Inspect the server's CapabilityStatement. |\n\n" +
+					"The functions cover the common ways to pull data from a FHIR R4 " +
+					"endpoint: listing clinical resources with their most-used fields " +
+					"flattened into typed columns, running a generic search across any " +
+					"resource type, reading an individual resource by its logical id, and " +
+					"inspecting the server's CapabilityStatement for the resource types " +
+					"and REST interactions it supports. List the schema to see the exact " +
+					"functions and their signatures.\n\n" +
 					"### Notes\n\n" +
 					"- Bundle pagination (`link[].relation == \"next\"`) is followed " +
 					"automatically up to a safety cap.\n" +
