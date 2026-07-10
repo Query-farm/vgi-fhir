@@ -93,10 +93,10 @@ func main() {
 				"still reachable with `json_extract`. List the `main` schema to discover " +
 				"the exact functions and their signatures. Built on the " +
 				"[vgi-go](https://github.com/Query-farm/vgi-go) SDK.\n\n" +
-				"```sql\n" +
-				"SELECT id, family, given, gender, birth_date\n" +
-				"FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
-				"```",
+				"Not sure which endpoint to point at? Browse the built-in " +
+				"`fhir_servers` directory view for a curated list of public FHIR R4 " +
+				"base URLs, then hand one to any `fhir_*` function. Worked, runnable " +
+				"statements ship as each function's examples.",
 			"vgi.author":             "Query.Farm",
 			"vgi.copyright":          "Copyright 2026 Query Farm LLC - https://query.farm",
 			"vgi.license":            "MIT",
@@ -107,10 +107,12 @@ func main() {
 			// worker. Each task names the public HAPI FHIR R4 test server as the
 			// base URL and pairs a prompt with the canonical answer SQL.
 			"vgi.agent_test_tasks": `[` +
-				`{"name":"list_patient_names","prompt":"Using the FHIR R4 server at https://hapi.fhir.org/baseR4, list the family and given names of the patients whose family name is Chalmers.","reference_sql":"SELECT family, given FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers');"},` +
-				`{"name":"numeric_observations","prompt":"From the FHIR R4 server at https://hapi.fhir.org/baseR4, show the code, numeric value, and unit for observations that carry a numeric measurement.","reference_sql":"SELECT code, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
-				`{"name":"search_conditions","prompt":"List the logical ids of the Condition resources available on the FHIR R4 server at https://hapi.fhir.org/baseR4.","reference_sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
-				`{"name":"server_resource_types","prompt":"Read the capability statement of the FHIR R4 server at https://hapi.fhir.org/baseR4 and list the resource types it advertises.","reference_sql":"SELECT resource_type FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+				`{"name":"has_chalmers_patient","prompt":"Using the FHIR R4 server at https://hapi.fhir.org/baseR4, determine whether there is at least one Patient whose family name is Chalmers. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers');","ignore_column_names":true},` +
+				`{"name":"has_numeric_observation","prompt":"From the FHIR R4 server at https://hapi.fhir.org/baseR4, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;","ignore_column_names":true},` +
+				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://hapi.fhir.org/baseR4 has any Condition resources. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');","ignore_column_names":true},` +
+				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://hapi.fhir.org/baseR4 and determine whether it advertises support for the Patient resource type. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4') WHERE resource_type = 'Patient';","ignore_column_names":true},` +
+				`{"name":"read_example_patient","prompt":"Read the Patient resource with logical id 'example' from the FHIR R4 server at https://hapi.fhir.org/baseR4 and determine whether its family name is 'Demo'. Answer with a single boolean.","reference_sql":"SELECT json_extract_string(resource, '$.name[0].family') = 'Demo' FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');","ignore_column_names":true},` +
+				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_servers WHERE base_url = 'https://hapi.fhir.org/baseR4';","ignore_column_names":true}` +
 				`]`,
 		}),
 		vgi.WithCatalogInfo(vgi.CatalogInfo{
@@ -176,7 +178,8 @@ func main() {
 					"- An optional `token` named argument supplies an OAuth bearer token " +
 					"for protected endpoints.",
 				// VGI506 representative example queries for the schema (catalog-qualified).
-				"vgi.example_queries": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
+				"vgi.example_queries": "SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;\n" +
+					"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
 					"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;\n" +
 					"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');\n" +
 					"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');\n" +

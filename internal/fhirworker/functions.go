@@ -185,10 +185,9 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				"Run a FHIR R4 [search](https://hl7.org/fhir/R4/search.html) over a " +
 				"single resource type and return one row per matched resource.\n\n" +
 				"### Usage\n\n" +
-				"```sql\n" +
-				"SELECT id, resource\n" +
-				"FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');\n" +
-				"```\n\n" +
+				"Call it with a FHIR R4 base URL and a resource type (for example " +
+				"`Condition`) to return one row per matched resource; runnable " +
+				"statements are attached as this function's examples.\n\n" +
 				"Pass a raw `query` (e.g. `name=smith&_count=50`) and/or `count` to " +
 				"refine the search, and `token` for protected servers.\n\n" +
 				"### Notes\n\n" +
@@ -198,10 +197,10 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				"field not surfaced by the flattened functions is still reachable via " +
 				"`json_extract`.",
 			"vgi.keywords": `["fhir","search","search resources","resource type","bundle","paging","query","patient","observation","condition"]`,
-			"vgi.result_columns_md": "| column | type | description |\n" +
-				"|---|---|---|\n" +
-				"| `id` | VARCHAR | Logical id of the matched FHIR resource. |\n" +
-				"| `resource` | VARCHAR | The full resource as a JSON string. |",
+			"vgi.result_columns_schema": `[` +
+				`{"name":"id","type":"VARCHAR","description":"Logical id of the matched FHIR resource."},` +
+				`{"name":"resource","type":"VARCHAR","description":"The full matched resource as a JSON string."}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -297,19 +296,18 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 				"`GET /{type}/{id}` against the server (the FHIR " +
 				"[read](https://hl7.org/fhir/R4/http.html#read) interaction).\n\n" +
 				"### Usage\n\n" +
-				"```sql\n" +
-				"SELECT resource\n" +
-				"FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');\n" +
-				"```\n\n" +
+				"Call it with a FHIR R4 base URL, a resource type, and a logical id " +
+				"(for example `Patient` / `example`) to fetch that one resource as " +
+				"JSON; runnable statements are attached as this function's examples.\n\n" +
 				"### Notes\n\n" +
 				"- Returns exactly one row when the resource exists; a missing " +
 				"resource (HTTP 404) surfaces as a query error rather than an empty " +
 				"result.\n" +
 				"- Supply `token` for endpoints that require authentication.",
 			"vgi.keywords": `["fhir","read","read resource","get by id","single resource","logical id","resource json"]`,
-			"vgi.result_columns_md": "| column | type | description |\n" +
-				"|---|---|---|\n" +
-				"| `resource` | VARCHAR | The requested resource as a JSON string. |",
+			"vgi.result_columns_schema": `[` +
+				`{"name":"resource","type":"VARCHAR","description":"The requested resource as a JSON string."}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -407,10 +405,9 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				"FHIR R4 server with the most-used demographic fields flattened into " +
 				"columns, while still returning the full resource JSON.\n\n" +
 				"### Usage\n\n" +
-				"```sql\n" +
-				"SELECT id, family, given, gender, birth_date\n" +
-				"FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
-				"```\n\n" +
+				"Call it with a FHIR R4 base URL to list Patients with their core " +
+				"demographic fields flattened into columns; runnable statements are " +
+				"attached as this function's examples.\n\n" +
 				"Filter server-side with a raw `query` (e.g. `family=smith`), set the " +
 				"page size with `count`, and authenticate with `token`.\n\n" +
 				"### Notes\n\n" +
@@ -419,15 +416,15 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				"- The `raw` column carries the untouched Patient JSON for fields not " +
 				"flattened here.",
 			"vgi.keywords": `["fhir","patients","patient","demographics","name","gender","birth date","list patients","flatten","ehr"]`,
-			"vgi.result_columns_md": "| column | type | description |\n" +
-				"|---|---|---|\n" +
-				"| `id` | VARCHAR | Logical id of the Patient resource. |\n" +
-				"| `family` | VARCHAR | Family (last) name from the first `name` entry. |\n" +
-				"| `given` | VARCHAR | Given (first) name(s) from the first `name` entry. |\n" +
-				"| `gender` | VARCHAR | Administrative gender (`male`, `female`, `other`, `unknown`). |\n" +
-				"| `birth_date` | VARCHAR | Date of birth (`YYYY-MM-DD` or partial FHIR date). |\n" +
-				"| `active` | BOOLEAN | Whether the Patient record is in active use. |\n" +
-				"| `raw` | VARCHAR | The full Patient resource as a JSON string. |",
+			"vgi.result_columns_schema": `[` +
+				`{"name":"id","type":"VARCHAR","description":"Logical id of the Patient resource."},` +
+				`{"name":"family","type":"VARCHAR","description":"Family (last) name from the first name entry."},` +
+				`{"name":"given","type":"VARCHAR","description":"Given (first) name(s) from the first name entry."},` +
+				`{"name":"gender","type":"VARCHAR","description":"Administrative gender: male, female, other, or unknown."},` +
+				`{"name":"birth_date","type":"VARCHAR","description":"Date of birth (YYYY-MM-DD or a partial FHIR date)."},` +
+				`{"name":"active","type":"BOOLEAN","description":"Whether the Patient record is in active use."},` +
+				`{"name":"raw","type":"VARCHAR","description":"The full Patient resource as a JSON string."}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -508,7 +505,7 @@ var observationsSchema = arrow.NewSchema([]arrow.Field{
 
 type observationsArgs struct {
 	BaseURL string `vgi:"pos=0,name=base_url,doc=FHIR R4 service base URL"`
-	Query   string `vgi:"default=,doc=Raw search query string (e.g. code=8867-4)"`
+	Query   string `vgi:"default=,doc=Raw FHIR search query string appended to the request, such as a status or LOINC code filter"`
 	Token   string `vgi:"default=,doc=OAuth bearer token"`
 	Count   int64  `vgi:"default=50,doc=Page size (_count search parameter)"`
 }
@@ -539,30 +536,29 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 				"`value` plus `unit`, alongside status, code, display, effective time, " +
 				"and subject reference.\n\n" +
 				"### Usage\n\n" +
-				"```sql\n" +
-				"SELECT code, code_display, value, unit\n" +
-				"FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4')\n" +
-				"WHERE value IS NOT NULL;\n" +
-				"```\n\n" +
-				"Narrow to a single LOINC code with a raw `query` (e.g. `code=8867-4` " +
-				"for heart rate).\n\n" +
+				"Call it with a FHIR R4 base URL to list Observations with their " +
+				"numeric `value` and `unit` flattened out; runnable statements are " +
+				"attached as this function's examples.\n\n" +
+				"Narrow to a single LOINC code with a raw `query` such as the heart-rate " +
+				"code, and keep only rows whose `value` is not null for numeric " +
+				"measurements.\n\n" +
 				"### Notes\n\n" +
 				"- Observations without a numeric `valueQuantity` (e.g. coded or " +
 				"string results) surface a **NULL** `value` rather than `0`.\n" +
 				"- The `raw` column preserves the full Observation JSON, including " +
 				"components and reference ranges.",
 			"vgi.keywords": `["fhir","observations","observation","vital signs","loinc","value","unit","measurement","lab","clinical"]`,
-			"vgi.result_columns_md": "| column | type | description |\n" +
-				"|---|---|---|\n" +
-				"| `id` | VARCHAR | Logical id of the Observation resource. |\n" +
-				"| `status` | VARCHAR | Observation status (`final`, `preliminary`, `amended`, …). |\n" +
-				"| `code` | VARCHAR | Primary observation code (e.g. LOINC code from `code.coding[0]`). |\n" +
-				"| `code_display` | VARCHAR | Human-readable display text for the code. |\n" +
-				"| `value` | DOUBLE | Numeric `valueQuantity.value`; NULL for non-numeric observations. |\n" +
-				"| `unit` | VARCHAR | Unit of the value (`valueQuantity.unit`). |\n" +
-				"| `effective` | VARCHAR | Effective date/time of the observation. |\n" +
-				"| `subject` | VARCHAR | Reference to the subject (usually `Patient/{id}`). |\n" +
-				"| `raw` | VARCHAR | The full Observation resource as a JSON string. |",
+			"vgi.result_columns_schema": `[` +
+				`{"name":"id","type":"VARCHAR","description":"Logical id of the Observation resource."},` +
+				`{"name":"status","type":"VARCHAR","description":"Observation status such as final, preliminary, or amended."},` +
+				`{"name":"code","type":"VARCHAR","description":"Primary observation code (e.g. the LOINC code from code.coding[0])."},` +
+				`{"name":"code_display","type":"VARCHAR","description":"Human-readable display text for the code."},` +
+				`{"name":"value","type":"DOUBLE","description":"Numeric valueQuantity.value; NULL for non-numeric observations."},` +
+				`{"name":"unit","type":"VARCHAR","description":"Unit of the value (valueQuantity.unit)."},` +
+				`{"name":"effective","type":"VARCHAR","description":"Effective date/time of the observation."},` +
+				`{"name":"subject","type":"VARCHAR","description":"Reference to the subject (usually Patient/{id})."},` +
+				`{"name":"raw","type":"VARCHAR","description":"The full Observation resource as a JSON string."}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -683,20 +679,19 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 				"(`GET /metadata`) and list each resource type it exposes together with " +
 				"the REST interactions supported for that type.\n\n" +
 				"### Usage\n\n" +
-				"```sql\n" +
-				"SELECT resource_type, UNNEST(interactions) AS interaction\n" +
-				"FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');\n" +
-				"```\n\n" +
+				"Call it with a FHIR R4 base URL to list every resource type the " +
+				"server exposes and the REST interactions it supports for each; " +
+				"runnable statements are attached as this function's examples.\n\n" +
 				"### Notes\n\n" +
 				"- `interactions` is a `VARCHAR[]`; `UNNEST` it to get one row per " +
 				"(resource type, interaction) pair.\n" +
 				"- Use this first to discover what an unfamiliar EHR/FHIR endpoint " +
 				"supports before querying specific resource types.",
 			"vgi.keywords": `["fhir","capabilities","capabilitystatement","metadata","supported resources","rest interactions","conformance","server discovery"]`,
-			"vgi.result_columns_md": "| column | type | description |\n" +
-				"|---|---|---|\n" +
-				"| `resource_type` | VARCHAR | A FHIR resource type the server exposes (e.g. `Patient`). |\n" +
-				"| `interactions` | VARCHAR[] | REST interaction codes supported for that type (e.g. `read`, `search-type`, `create`). |",
+			"vgi.result_columns_schema": `[` +
+				`{"name":"resource_type","type":"VARCHAR","description":"A FHIR resource type the server exposes (e.g. Patient)."},` +
+				`{"name":"interactions","type":"VARCHAR[]","description":"REST interaction codes supported for that type (e.g. read, search-type, create)."}` +
+				`]`,
 			"vgi.executable_examples": executableExamples,
 		},
 		Examples: []vgi.CatalogExample{
@@ -755,11 +750,78 @@ func NewCapabilitiesFunction() vgi.TableFunction {
 	return vgi.AsTableFunction[capabilitiesState](&CapabilitiesFunction{})
 }
 
-// Register registers all FHIR table functions on the worker.
+// serversViewDefinition backs the fhir_servers browsable registry view. It is a
+// pure VALUES relation, so it scans with no arguments and no network access or
+// credentials — an agent can list it to discover a real base URL to hand to the
+// table functions (which take that base URL as their first argument). Every row
+// is a well-known, publicly reachable FHIR R4 endpoint.
+const serversViewDefinition = `SELECT name, base_url, fhir_version, requires_auth, description FROM (VALUES ` +
+	`('HAPI FHIR R4 Public Test Server', 'https://hapi.fhir.org/baseR4', '4.0.1', false, ` +
+	`'Open, unauthenticated public HAPI reference server hosting a large shared R4 dataset; ideal for exploration and demos.'), ` +
+	`('Firely Public FHIR R4 Server', 'https://server.fire.ly', '4.0.1', false, ` +
+	`'Firely public FHIR R4 test server (no authentication); a useful second endpoint for cross-server checks.'), ` +
+	`('SMART Health IT R4 Sandbox', 'https://r4.smarthealthit.org', '4.0.1', false, ` +
+	`'SMART Health IT open R4 sandbox seeded with synthetic Synthea patient data.'), ` +
+	`('HL7 Terminology Server (R4)', 'https://tx.fhir.org/r4', '4.0.1', false, ` +
+	`'HL7 public R4 terminology server exposing CodeSystem, ValueSet, and related conformance resources.')` +
+	`) AS t(name, base_url, fhir_version, requires_auth, description)`
+
+// registerServersView registers the fhir_servers browsable directory view: a
+// static, credential-free list of public FHIR R4 endpoints that gives agents a
+// concrete data surface (and a real base_url to pass to the table functions)
+// without having to guess an endpoint first.
+func registerServersView(w *vgi.Worker) {
+	w.RegisterCatalogView("main", vgi.CatalogView{
+		Name:       "fhir_servers",
+		Definition: serversViewDefinition,
+		Comment:    "Curated directory of public HL7 FHIR R4 endpoints and whether they require authentication.",
+		ColumnComments: map[string]string{
+			"name":          "Human-friendly name of the FHIR R4 server.",
+			"base_url":      "Service base URL to pass as the first argument of every fhir_* table function.",
+			"fhir_version":  "FHIR specification version the endpoint serves (all R4, 4.0.1).",
+			"requires_auth": "Whether the endpoint requires an OAuth bearer token (all listed servers are open).",
+			"description":   "What the endpoint is and what data it holds.",
+		},
+		Tags: map[string]string{
+			"vgi.title":    "Public FHIR R4 Server Directory",
+			"vgi.category": "Server Discovery",
+			"vgi.doc_llm": "A static, credential-free directory of well-known public HL7 FHIR R4 " +
+				"endpoints. Each row pairs a human name with the service base_url to pass as the " +
+				"first argument of the fhir_patients / fhir_observations / fhir_search / fhir_read / " +
+				"fhir_capabilities table functions, the FHIR version served, whether the endpoint " +
+				"needs authentication, and a short description. Query this first to discover a base " +
+				"URL to point the other functions at, without having to know an endpoint up front.",
+			"vgi.doc_md": "## fhir_servers\n\n" +
+				"A curated, credential-free directory of well-known **public HL7 FHIR R4** " +
+				"endpoints. It is a static list (no network access), so it always returns instantly " +
+				"and is the natural starting point for discovery: pick a `base_url` here and hand it " +
+				"to any `fhir_*` table function as its first argument.\n\n" +
+				"### Columns\n\n" +
+				"- `name` — human-friendly server name.\n" +
+				"- `base_url` — the FHIR R4 service base URL (e.g. `https://hapi.fhir.org/baseR4`).\n" +
+				"- `fhir_version` — the FHIR version served (all `4.0.1`).\n" +
+				"- `requires_auth` — whether an OAuth bearer token is needed (all listed servers are open).\n" +
+				"- `description` — what the endpoint is and what data it holds.",
+			"vgi.keywords": `["fhir","fhir r4","servers","endpoints","directory","registry",` +
+				`"base url","public test server","hapi","discovery"]`,
+			"domain":   "healthcare",
+			"category": "interoperability",
+			"topic":    "fhir-r4-rest",
+			"vgi.example_queries": `[` +
+				`{"description":"List the curated public FHIR R4 test servers and whether each needs authentication.",` +
+				`"sql":"SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name"}` +
+				`]`,
+		},
+	})
+}
+
+// Register registers all FHIR table functions and the browsable directory view
+// on the worker.
 func Register(w *vgi.Worker) {
 	w.RegisterTable(NewSearchFunction())
 	w.RegisterTable(NewReadFunction())
 	w.RegisterTable(NewPatientsFunction())
 	w.RegisterTable(NewObservationsFunction())
 	w.RegisterTable(NewCapabilitiesFunction())
+	registerServersView(w)
 }
