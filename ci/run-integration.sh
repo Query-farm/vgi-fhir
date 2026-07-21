@@ -80,28 +80,42 @@ trap cleanup EXIT
 # bearer token; it prints "PORT:<n>" on stdout (see cmd/mockserver/main.go). We
 # capture that, export VGI_FHIR_TEST_URL + VGI_FHIR_TEST_TOKEN. The mock is
 # required for every transport — the worker still makes the FHIR HTTP calls.
-MOCK_BIN="$STAGE/mockserver"
-echo "Building mock FHIR server ..."
-( cd "$REPO" && go build -o "$MOCK_BIN" ./cmd/mockserver )
+#
+# SKIP_MOCK hook (opt-in; default unchanged): when set, this script does NOT
+# build/start the mock and instead trusts a caller-supplied VGI_FHIR_TEST_URL +
+# VGI_FHIR_TEST_TOKEN already present in the environment. Used by callers that
+# provision the mock out-of-band. The container image_test does NOT set this —
+# it lets the runner (which has Go) build+start the mock on the host loopback,
+# reachable from the worker container via `--network host`.
+if [ -n "${SKIP_MOCK:-}" ]; then
+  : "${VGI_FHIR_TEST_URL:?SKIP_MOCK set but VGI_FHIR_TEST_URL is not exported}"
+  : "${VGI_FHIR_TEST_TOKEN:?SKIP_MOCK set but VGI_FHIR_TEST_TOKEN is not exported}"
+  export VGI_FHIR_TEST_URL VGI_FHIR_TEST_TOKEN
+  echo "SKIP_MOCK set — using pre-provisioned mock at $VGI_FHIR_TEST_URL"
+else
+  MOCK_BIN="$STAGE/mockserver"
+  echo "Building mock FHIR server ..."
+  ( cd "$REPO" && go build -o "$MOCK_BIN" ./cmd/mockserver )
 
-MOCK_PORT_FILE="$(mktemp)"
-"$MOCK_BIN" --addr 127.0.0.1:0 --token "$MOCK_TOKEN" >"$MOCK_PORT_FILE" 2>/dev/null &
-MOCK_PID=$!
+  MOCK_PORT_FILE="$(mktemp)"
+  "$MOCK_BIN" --addr 127.0.0.1:0 --token "$MOCK_TOKEN" >"$MOCK_PORT_FILE" 2>/dev/null &
+  MOCK_PID=$!
 
-PORT=""
-for _ in $(seq 1 30); do
-  PORT="$(sed -n 's/^PORT:\([0-9][0-9]*\)$/\1/p' "$MOCK_PORT_FILE" 2>/dev/null | head -1)"
-  [ -n "$PORT" ] && break
-  sleep 0.2
-done
-if [ -z "$PORT" ]; then
-  echo "ERROR: mock server did not report a port" >&2
-  exit 1
+  PORT=""
+  for _ in $(seq 1 30); do
+    PORT="$(sed -n 's/^PORT:\([0-9][0-9]*\)$/\1/p' "$MOCK_PORT_FILE" 2>/dev/null | head -1)"
+    [ -n "$PORT" ] && break
+    sleep 0.2
+  done
+  if [ -z "$PORT" ]; then
+    echo "ERROR: mock server did not report a port" >&2
+    exit 1
+  fi
+  rm -f "$MOCK_PORT_FILE"
+  export VGI_FHIR_TEST_URL="http://127.0.0.1:$PORT"
+  export VGI_FHIR_TEST_TOKEN="$MOCK_TOKEN"
+  echo "Mock FHIR server listening on $VGI_FHIR_TEST_URL (pid $MOCK_PID)"
 fi
-rm -f "$MOCK_PORT_FILE"
-export VGI_FHIR_TEST_URL="http://127.0.0.1:$PORT"
-export VGI_FHIR_TEST_TOKEN="$MOCK_TOKEN"
-echo "Mock FHIR server listening on $VGI_FHIR_TEST_URL (pid $MOCK_PID)"
 
 # --- Per-transport: resolve VGI_FHIR_WORKER (the ATTACH LOCATION) ------------
 # subprocess keeps the binary path (extension spawns stdio). http/unix start the
@@ -112,6 +126,16 @@ case "$TRANSPORT" in
     ;;
 
   http)
+    # Pre-launched-HTTP hook (opt-in; default unchanged): if VGI_FHIR_WORKER is
+    # ALREADY an http(s):// URL, a worker is running out-of-band (e.g. a warm
+    # container in the Docker image_test) — use it verbatim and do NOT spawn one.
+    # Otherwise (the normal CI path) VGI_FHIR_WORKER is the binary path and we
+    # start `<worker> --http` ourselves and parse its "PORT:<n>".
+    case "$VGI_FHIR_WORKER" in
+      http://*|https://*)
+        echo "Transport: http — using pre-launched worker at $VGI_FHIR_WORKER"
+        ;;
+      *)
     # Start the worker in --http mode; it prints "PORT:<n>" once listening.
     WORKER_PORT_FILE="$(mktemp)"
     echo "Transport: http — starting '$WORKER_BIN --http' ..."
@@ -137,6 +161,8 @@ case "$TRANSPORT" in
     # 404 — which the runner silently skips as an error "matching 'HTTP'".
     export VGI_FHIR_WORKER="http://127.0.0.1:$WPORT"
     echo "HTTP worker listening on $VGI_FHIR_WORKER (pid $WORKER_PID)"
+        ;;
+    esac
     ;;
 
   unix)
@@ -230,10 +256,14 @@ rm -f "$STAGE/test/_warm.test"
 # "All tests were skipped" and the job would go GREEN having run nothing — a
 # fake pass. We detect that and fail explicitly. A real run prints
 # "All tests passed (N assertions ...)".
-echo "Running suite (transport: $TRANSPORT, worker: $VGI_FHIR_WORKER) ..."
+# TEST_PATTERN hook (opt-in; default unchanged): which staged test glob to run.
+# Defaults to the whole suite; the Docker image_test's stdio smoke narrows it to
+# a single .test file for a fast cold-container check.
+TEST_PATTERN="${TEST_PATTERN:-test/sql/*}"
+echo "Running suite (transport: $TRANSPORT, worker: $VGI_FHIR_WORKER, pattern: $TEST_PATTERN) ..."
 RUN_LOG="$STAGE/run.log"
 set +e
-"$HAYBARN_UNITTEST" "test/sql/*" 2>&1 | tee "$RUN_LOG"
+"$HAYBARN_UNITTEST" "$TEST_PATTERN" 2>&1 | tee "$RUN_LOG"
 RUN_RC="${PIPESTATUS[0]}"
 set -e
 

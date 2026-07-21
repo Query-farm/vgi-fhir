@@ -1,0 +1,24 @@
+# Keep the build context small: the Dockerfile only needs the Go module files
+# and the cmd/ + internal/ sources (plus docker-entrypoint.sh). Everything below
+# is rebuilt inside the image, tested on the runner, or irrelevant.
+.git
+.github
+.gitignore
+/build
+test
+docs
+ci
+README.md
+CLAUDE.md
+LICENSE
+Makefile
+.golangci.yml
+duckdb_unittest_tempdir
+*.duckdb
+# Prebuilt binaries from a local `make build` — never copy host artifacts in.
+/vgi-fhir-worker
+/mockserver
+# Local caches.
+.vgi-review-cache.json
+.vgi-sim-cache.json
+.DS_Store

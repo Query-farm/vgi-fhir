@@ -21,6 +21,11 @@ func main() {
 	// VGI extension varies argv to key its worker cache), so we filter to flags
 	// we actually define before parsing.
 	httpMode := flag.Bool("http", false, "Run as an HTTP server instead of stdio")
+	// The bind address used when --http is set. Default 127.0.0.1:0 (loopback +
+	// ephemeral port) keeps dev/CI behaviour identical to the old hardcoded
+	// value; the container entrypoint passes 0.0.0.0:$PORT so a published host
+	// port (and the /health probe) can reach it.
+	httpAddr := flag.String("http-addr", "127.0.0.1:0", "HTTP bind address (host:port) when --http is set")
 	unixPath := flag.String("unix", "", "Serve the AF_UNIX launcher transport on this socket path instead of stdio")
 	logFlags := vgi.RegisterLoggingFlags(flag.CommandLine)
 	_ = flag.CommandLine.Parse(filterKnownFlags(os.Args[1:], map[string]bool{
@@ -28,6 +33,7 @@ func main() {
 		"log-format": true,
 		"log-logger": true,
 		"unix":       true,
+		"http-addr":  true,
 	}))
 	if err := logFlags.Apply(); err != nil {
 		log.Fatalf("logging flags: %v", err)
@@ -197,7 +203,7 @@ func main() {
 	fhirworker.Register(w)
 
 	if *httpMode {
-		if err := w.RunHttp("127.0.0.1:0"); err != nil {
+		if err := w.RunHttp(*httpAddr); err != nil {
 			log.Fatal(err)
 		}
 		return

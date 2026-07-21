@@ -1,0 +1,89 @@
+# Copyright 2026 Query Farm LLC - https://query.farm
+#
+# Build and publish the multi-arch vgi-fhir image to ghcr.io. The heavy lifting
+# (multi-arch build -> per-arch /health boot smoke -> image SQL suite -> push ->
+# manifest -> cosign-sign) lives in the shared reusable workflow
+# Query-farm/vgi-actions; this file gates on the repo's own CI suite and supplies
+# the worker-specific inputs.
+#
+# Tag-driven: vX.Y.Z -> :X.Y.Z/:X.Y/:latest, push to main -> :edge. Publishing a
+# GitHub Release creates the tag, which fires this too.
+name: Publish image to ghcr.io
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gate every image on the full unit + vgi-extension integration suite (all
+  # transports), so a broken worker is never imaged. ci.yml declares
+  # `on: workflow_call` so it can run as this reusable dependency.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [ci]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: Query-farm/vgi-actions/.github/workflows/docker-publish.yml@v1
+    secrets: inherit
+    with:
+      image_name: vgi-fhir
+      # Go binary — nothing to `import`, so the language-import smoke is skipped.
+      # The reusable workflow still runs its dual-arch HTTP /health boot smoke.
+      smoke_import: ""
+      health_port: "8000"
+      # No ci/check-version.sh in this repo, so version_check_cmd is omitted.
+      #
+      # Validate the built image's transports against the signed vgi extension.
+      # The worker *logic* is already exercised every run by the gating `ci` job
+      # (all test/sql/*, three transports, two OSes), so here we only prove the
+      # IMAGE's entrypoints speak the protocol against the repo's OFFLINE mock
+      # FHIR server (ci/run-integration.sh builds + starts it on the runner's
+      # host loopback; the worker container reaches it via `--network host`):
+      #   - stdio: smoke ONE file through `docker run … stdio` (the on-host mode);
+      #   - HTTP : the FULL suite against a SINGLE warm container (end-to-end
+      #            image check via the default `http` entrypoint + /health).
+      # $CITEST_IMAGE is the loaded <image>:citest-amd64 ref; GH_TOKEN is
+      # provided for the haybarn download.
+      image_test: |
+        echo "::group::download haybarn-unittest"
+        REL=$(gh release view --repo Query-farm-haybarn/haybarn --json tagName --jq .tagName)
+        gh release download "$REL" --repo Query-farm-haybarn/haybarn \
+          --pattern 'haybarn_unittest-linux-amd64.zip' --output hb.zip --clobber
+        mkdir -p hb && unzip -o -q hb.zip -d hb
+        export HAYBARN_UNITTEST="$PWD/$(find hb -name 'haybarn-unittest' -type f | head -1)"
+        chmod +x "$HAYBARN_UNITTEST"
+        echo "::endgroup::"
+
+        echo "::group::stdio entrypoint smoke (one file, cold container per ATTACH)"
+        # `--network host` so the containerized worker reaches the mock FHIR
+        # server that run-integration.sh starts on the host loopback.
+        TRANSPORT=subprocess \
+          TEST_PATTERN="test/sql/fhir_search.test" \
+          VGI_FHIR_WORKER="docker run -i --rm --network host $CITEST_IMAGE stdio" \
+          ci/run-integration.sh
+        echo "::endgroup::"
+
+        echo "::group::full SQL suite — HTTP transport (one warm container)"
+        # `--network host`: the worker binds 0.0.0.0:8000 on the host network so
+        # haybarn reaches it at localhost:8000 AND it reaches the host-side mock.
+        CID=$(docker run -d --network host "$CITEST_IMAGE")
+        trap 'docker rm -f "$CID" >/dev/null 2>&1 || true' EXIT
+        for _ in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:8000/health && break; sleep 1; done
+        # VGI_FHIR_WORKER is already an http:// URL -> run-integration.sh's
+        # pre-launched-http hook uses it verbatim (does not spawn a worker).
+        TRANSPORT=http VGI_FHIR_WORKER="http://localhost:8000" ci/run-integration.sh
+        echo "::endgroup::"
