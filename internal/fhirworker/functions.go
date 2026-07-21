@@ -201,6 +201,15 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"id","type":"VARCHAR","description":"Logical id of the matched FHIR resource."},` +
 				`{"name":"resource","type":"VARCHAR","description":"The full matched resource as a JSON string."}` +
 				`]`,
+			// VGI515 described examples: the native duckdb_functions().examples
+			// carrier drops descriptions, so the same examples are re-supplied here
+			// as a described [{description,sql}] JSON list (byte-identical to Examples).
+			"vgi.example_queries": `[` +
+				`{"description":"List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",` +
+				`"sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
+				`{"description":"Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",` +
+				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);"}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -307,6 +316,12 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 			"vgi.keywords": `["fhir","read","read resource","get by id","single resource","logical id","resource json"]`,
 			"vgi.result_columns_schema": `[` +
 				`{"name":"resource","type":"VARCHAR","description":"The requested resource as a JSON string."}` +
+				`]`,
+			// VGI515 described examples (see fhir_search): the native examples
+			// carrier drops descriptions, so re-supply them as a described list.
+			"vgi.example_queries": `[` +
+				`{"description":"Read the canonical FHIR example Patient (logical id 'example') and return its full JSON.",` +
+				`"sql":"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
@@ -424,6 +439,14 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"birth_date","type":"VARCHAR","description":"Date of birth (YYYY-MM-DD or a partial FHIR date)."},` +
 				`{"name":"active","type":"BOOLEAN","description":"Whether the Patient record is in active use."},` +
 				`{"name":"raw","type":"VARCHAR","description":"The full Patient resource as a JSON string."}` +
+				`]`,
+			// VGI515 described examples (see fhir_search): the native examples
+			// carrier drops descriptions, so re-supply them as a described list.
+			"vgi.example_queries": `[` +
+				`{"description":"List Patients with their core demographic fields flattened into columns.",` +
+				`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');"},` +
+				`{"description":"Count Patients whose family name is 'smith' (across all Bundle pages).",` +
+				`"sql":"SELECT count(*) FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=smith');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
@@ -559,6 +582,14 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"subject","type":"VARCHAR","description":"Reference to the subject (usually Patient/{id})."},` +
 				`{"name":"raw","type":"VARCHAR","description":"The full Observation resource as a JSON string."}` +
 				`]`,
+			// VGI515 described examples (see fhir_search): the native examples
+			// carrier drops descriptions, so re-supply them as a described list.
+			"vgi.example_queries": `[` +
+				`{"description":"List numeric Observations with their code, value, and unit.",` +
+				`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
+				`{"description":"List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",` +
+				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=8867-4');"}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
@@ -693,6 +724,14 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"interactions","type":"VARCHAR[]","description":"REST interaction codes supported for that type (e.g. read, search-type, create)."}` +
 				`]`,
 			"vgi.executable_examples": executableExamples,
+			// VGI515 described examples (see fhir_search): the native examples
+			// carrier drops descriptions, so re-supply them as a described list.
+			"vgi.example_queries": `[` +
+				`{"description":"List every resource type a FHIR server supports and the REST interactions available for each.",` +
+				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"},` +
+				`{"description":"Expand the supported REST interactions to one row per (resource type, interaction).",` +
+				`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{

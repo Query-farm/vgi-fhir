@@ -90,8 +90,7 @@ func main() {
 				"from its [CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html). " +
 				"Flattened results always carry the untouched resource JSON alongside the " +
 				"typed columns, so nothing is lost — anything not surfaced as a column is " +
-				"still reachable with `json_extract`. List the `main` schema to discover " +
-				"the exact functions and their signatures. Built on the " +
+				"still reachable with `json_extract`. Built on the " +
 				"[vgi-go](https://github.com/Query-farm/vgi-go) SDK.\n\n" +
 				"Not sure which endpoint to point at? Browse the built-in " +
 				"`fhir_servers` directory view for a curated list of public FHIR R4 " +
@@ -156,8 +155,7 @@ func main() {
 					"over any resource type, fetching a single resource by logical id, " +
 					"and reporting the resource types and REST interactions a server " +
 					"supports from its CapabilityStatement. Bundle pages are followed " +
-					"automatically, so result sets span all `next` links. List the schema " +
-					"to see the exact functions and their signatures.",
+					"automatically, so result sets span all `next` links.",
 				"vgi.doc_md": "## FHIR R4 Query Functions\n\n" +
 					"This schema groups every table function exposed by the **vgi-fhir** " +
 					"connector. Each function takes a FHIR R4 service *base URL* as its " +
@@ -168,8 +166,7 @@ func main() {
 					"flattened into typed columns, running a generic search across any " +
 					"resource type, reading an individual resource by its logical id, and " +
 					"inspecting the server's CapabilityStatement for the resource types " +
-					"and REST interactions it supports. List the schema to see the exact " +
-					"functions and their signatures.\n\n" +
+					"and REST interactions it supports.\n\n" +
 					"### Notes\n\n" +
 					"- Bundle pagination (`link[].relation == \"next\"`) is followed " +
 					"automatically up to a safety cap.\n" +
@@ -177,13 +174,23 @@ func main() {
 					"(`raw` / `resource`) so nothing is lost.\n" +
 					"- An optional `token` named argument supplies an OAuth bearer token " +
 					"for protected endpoints.",
-				// VGI506 representative example queries for the schema (catalog-qualified).
-				"vgi.example_queries": "SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;\n" +
-					"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');\n" +
-					"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;\n" +
-					"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');\n" +
-					"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');\n" +
-					"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+				// VGI506/VGI515 representative example queries for the schema
+				// (catalog-qualified). Each carries a human-readable description
+				// via the described [{description,sql}] JSON list form.
+				"vgi.example_queries": `[` +
+					`{"description":"List the curated public FHIR R4 test servers and whether each needs authentication.",` +
+					`"sql":"SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;"},` +
+					`{"description":"List Patients with their core demographic fields flattened into columns.",` +
+					`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');"},` +
+					`{"description":"List numeric Observations with their code, value, and unit.",` +
+					`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
+					`{"description":"List the ids of Condition resources on a FHIR R4 server.",` +
+					`"sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
+					`{"description":"Read a single Patient resource by logical id and return its full JSON.",` +
+					`"sql":"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');"},` +
+					`{"description":"Expand a server's supported REST interactions to one row per (resource type, interaction).",` +
+					`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+					`]`,
 			},
 		}),
 	)

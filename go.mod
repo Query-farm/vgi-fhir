@@ -3,14 +3,14 @@ module github.com/Query-farm/vgi-fhir
 go 1.25.0
 
 require (
-	github.com/Query-farm/vgi-go v0.14.0
-	github.com/Query-farm/vgi-rpc-go v0.12.0
+	github.com/Query-farm/vgi-go v0.16.0
+	github.com/Query-farm/vgi-rpc-go v0.16.0
 	github.com/apache/arrow-go/v18 v18.6.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/apache/thrift v0.23.0 // indirect
+	github.com/apache/thrift v0.24.0 // indirect
 	github.com/duckdb/duckdb-go-bindings v0.10504.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10504.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10504.0 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597 // indirect
+	golang.org/x/exp v0.0.0-20260718201538-764159d718ef // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect

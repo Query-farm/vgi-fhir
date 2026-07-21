@@ -129,3 +129,11 @@ jobs:
         with:
           location: "${{ github.workspace }}/vgi-fhir-worker"
           fail-on: info
+          # Static-only lint: this is a live-network worker whose examples run
+          # against public HL7 FHIR R4 servers (e.g. hapi.fhir.org). The VGI9xx
+          # execution rules (VGI906 executable-examples, VGI911 scan-responds)
+          # would drive real HTTP to those external endpoints, which is slow and
+          # flaky in CI (30s+ pagination, occasional 404/timeout). The static
+          # metadata gate is the real gate here; the mock-server SQL E2E job
+          # exercises the actual scan behaviour deterministically.
+          execute: false
