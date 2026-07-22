@@ -124,16 +124,23 @@ jobs:
       - name: Build the worker
         run: go build -o vgi-fhir-worker ./cmd/vgi-fhir-worker
 
+      # The execution rules (VGI9xx) run here, so this job certifies assurance
+      # level L2 (behavioral), not just L1 (static metadata).
+      #
+      # They used to be switched off because the examples drive real HTTP to a
+      # public FHIR R4 server and "30s+ pagination, occasional 404/timeout" made
+      # them flaky. Both causes were worker bugs, and both are fixed:
+      #   * the search-backed functions now STREAM one Bundle page per batch
+      #     instead of crawling every page in NewState, so a scan's first row
+      #     costs one round-trip (measured: 10s+ timeout -> 0.2-2.8s); and
+      #   * the examples point at the SMART Health IT R4 sandbox, whose frozen
+      #     Synthea dataset keeps a pinned logical id resolvable (the old
+      #     `Patient/example` on the shared HAPI server had been deleted, so
+      #     fhir_read's example answered HTTP 404).
+      # The mock-server SQL E2E job still covers scan behaviour hermetically.
       - name: vgi-lint
         uses: Query-farm/vgi-lint-check@v1
         with:
           location: "${{ github.workspace }}/vgi-fhir-worker"
           fail-on: info
-          # Static-only lint: this is a live-network worker whose examples run
-          # against public HL7 FHIR R4 servers (e.g. hapi.fhir.org). The VGI9xx
-          # execution rules (VGI906 executable-examples, VGI911 scan-responds)
-          # would drive real HTTP to those external endpoints, which is slow and
-          # flaky in CI (30s+ pagination, occasional 404/timeout). The static
-          # metadata gate is the real gate here; the mock-server SQL E2E job
-          # exercises the actual scan behaviour deterministically.
-          execute: false
+          execute: true

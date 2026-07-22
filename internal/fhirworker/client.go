@@ -65,23 +65,34 @@ type bundleLink struct {
 // client is all that is needed.
 var httpClient = &http.Client{}
 
-// SearchAll performs a paginated FHIR search GET against
-// {BaseURL}/{resourceType}, following Bundle `next` links until every page has
-// been read or maxResults is reached. It returns the raw JSON of each resource.
-func SearchAll(ctx context.Context, opts FetchOptions, resourceType string) ([]json.RawMessage, error) {
+// SearchStartURL builds the URL of the FIRST page of a FHIR search against
+// {BaseURL}/{resourceType}. Callers stream the search by handing this URL to
+// SearchPage and then following each returned next-page URL.
+func SearchStartURL(opts FetchOptions, resourceType string) (string, error) {
 	if opts.BaseURL == "" {
-		return nil, fmt.Errorf("fhir: base_url is required")
+		return "", fmt.Errorf("fhir: base_url is required")
 	}
 	if resourceType == "" {
-		return nil, fmt.Errorf("fhir: resource_type is required")
+		return "", fmt.Errorf("fhir: resource_type is required")
 	}
 	count := opts.Count
 	if count <= 0 {
 		count = defaultPageSize
 	}
-	maxResults := opts.MaxResults
-	if maxResults <= 0 {
-		maxResults = defaultMaxResults
+	return searchURL(opts.BaseURL, resourceType, opts.Query, count)
+}
+
+// SearchPage fetches exactly ONE Bundle page from pageURL and returns the raw
+// JSON of the resources it carries plus the URL of the next page ("" when the
+// Bundle advertises no `next` link).
+//
+// This is the unit of work a streaming scan does per tick: one HTTP round-trip,
+// then rows. Nothing here reads ahead — a table function must be able to emit
+// its first batch after a single call, because a VGI scan blocked inside its
+// first batch cannot be cancelled (see VGI911).
+func SearchPage(ctx context.Context, opts FetchOptions, pageURL string) ([]json.RawMessage, string, error) {
+	if pageURL == "" {
+		return nil, "", nil
 	}
 	timeout := opts.Timeout
 	if timeout <= 0 {
@@ -90,9 +101,46 @@ func SearchAll(ctx context.Context, opts FetchOptions, resourceType string) ([]j
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	next, err := searchURL(opts.BaseURL, resourceType, opts.Query, count)
+	body, err := doGet(ctx, pageURL, opts.Token)
+	if err != nil {
+		return nil, "", err
+	}
+	var b bundle
+	if err := json.Unmarshal(body, &b); err != nil {
+		return nil, "", fmt.Errorf("fhir: decode Bundle from %s: %w", pageURL, err)
+	}
+	out := make([]json.RawMessage, 0, len(b.Entry))
+	for _, e := range b.Entry {
+		if len(e.Resource) == 0 {
+			continue
+		}
+		out = append(out, e.Resource)
+	}
+	return out, nextLink(b.Link), nil
+}
+
+// SearchAll performs a paginated FHIR search GET against
+// {BaseURL}/{resourceType}, following Bundle `next` links until a page comes
+// back empty, no `next` link remains, or maxResults is reached. It returns the
+// raw JSON of each resource.
+//
+// This eager form is kept for callers that genuinely want the whole result set
+// in memory (the tests, and any future non-streaming use). Table functions must
+// NOT use it — they stream with SearchStartURL + SearchPage so their first batch
+// costs one round-trip instead of the whole crawl.
+//
+// The empty-page break is load-bearing, not defensive dressing: the public HAPI
+// R4 server answers an unfiltered search with a Bundle that carries a `next`
+// link and NO entries, on every page, forever. Following `next` blindly turns
+// that into an unbounded crawl that only stops when the context deadline fires.
+func SearchAll(ctx context.Context, opts FetchOptions, resourceType string) ([]json.RawMessage, error) {
+	next, err := SearchStartURL(opts, resourceType)
 	if err != nil {
 		return nil, err
+	}
+	maxResults := opts.MaxResults
+	if maxResults <= 0 {
+		maxResults = defaultMaxResults
 	}
 
 	var all []json.RawMessage
@@ -100,24 +148,20 @@ func SearchAll(ctx context.Context, opts FetchOptions, resourceType string) ([]j
 		if page > maxPages {
 			return nil, fmt.Errorf("fhir: aborting after too many pages searching %s (possible pagination loop)", resourceType)
 		}
-		body, err := doGet(ctx, next, opts.Token)
+		rows, following, err := SearchPage(ctx, opts, next)
 		if err != nil {
 			return nil, err
 		}
-		var b bundle
-		if err := json.Unmarshal(body, &b); err != nil {
-			return nil, fmt.Errorf("fhir: decode Bundle from %s: %w", next, err)
+		if len(rows) == 0 {
+			return all, nil
 		}
-		for _, e := range b.Entry {
-			if len(e.Resource) == 0 {
-				continue
-			}
-			all = append(all, e.Resource)
+		for _, raw := range rows {
+			all = append(all, raw)
 			if len(all) >= maxResults {
 				return all, nil
 			}
 		}
-		next = nextLink(b.Link)
+		next = following
 	}
 	return all, nil
 }

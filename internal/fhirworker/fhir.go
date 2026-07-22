@@ -164,11 +164,17 @@ func SearchResources(ctx context.Context, opts FetchOptions, resourceType string
 	if err != nil {
 		return nil, err
 	}
+	return FlattenResources(raws), nil
+}
+
+// FlattenResources turns one page of raw resources into id + raw rows. Split
+// out from SearchResources so a streaming scan can flatten a single page.
+func FlattenResources(raws []json.RawMessage) []Resource {
 	out := make([]Resource, 0, len(raws))
 	for _, raw := range raws {
 		out = append(out, Resource{ID: idOf(raw), Raw: string(raw)})
 	}
-	return out, nil
+	return out
 }
 
 // FetchPatients searches {base}/Patient and flattens the core fields.
@@ -177,6 +183,12 @@ func FetchPatients(ctx context.Context, opts FetchOptions) ([]Patient, error) {
 	if err != nil {
 		return nil, err
 	}
+	return FlattenPatients(raws)
+}
+
+// FlattenPatients flattens one page of raw Patient resources into Patient rows.
+// Split out from FetchPatients so a streaming scan can flatten a single page.
+func FlattenPatients(raws []json.RawMessage) ([]Patient, error) {
 	out := make([]Patient, 0, len(raws))
 	for _, raw := range raws {
 		var p fhirPatient
@@ -204,6 +216,13 @@ func FetchObservations(ctx context.Context, opts FetchOptions) ([]Observation, e
 	if err != nil {
 		return nil, err
 	}
+	return FlattenObservations(raws)
+}
+
+// FlattenObservations flattens one page of raw Observation resources. Split out
+// from FetchObservations so a streaming scan can flatten a single page.
+// Non-numeric observations (no valueQuantity) yield a nil Value (SQL NULL).
+func FlattenObservations(raws []json.RawMessage) ([]Observation, error) {
 	out := make([]Observation, 0, len(raws))
 	for _, raw := range raws {
 		var o fhirObservation

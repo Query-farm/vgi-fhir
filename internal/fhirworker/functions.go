@@ -18,9 +18,16 @@ const CatalogName = "fhir"
 // IMPORTANT (gob-state gotcha): table-function state is gob-encoded by the SDK
 // between NewState and Process (it may cross a process/worker boundary). State
 // structs must therefore hold only EXPORTED, gob-encodable fields — no
-// arrow.Record, no interfaces, channels, funcs, or unexported fields. Each
-// table function fetches its rows eagerly in NewState, stores plain exported Go
-// slices, and rebuilds the Arrow batch in Process.
+// arrow.Record, no interfaces, channels, funcs, or unexported fields. Every
+// table function stores plain exported Go slices and rebuilds the Arrow batch in
+// Process.
+//
+// The single-request functions (fhir_read, fhir_capabilities) fetch in NewState
+// and embed Cursor[T]. The search-backed ones (fhir_search, fhir_patients,
+// fhir_observations) do NO I/O in NewState — they embed PageCursor[T], which
+// fetches one Bundle page at a time from Process, so the first batch costs one
+// HTTP round-trip rather than the whole paginated crawl. See PageCursor below
+// for why that matters (VGI911).
 //
 // WHY AN EXPLICIT CURSOR, NOT A bool Done (the HTTP-continuation fix):
 //
@@ -56,25 +63,44 @@ const rowsPerTick = 64
 // Per-object vgi.source_url is intentionally NOT set (VGI139): source_url
 // belongs only on the catalog object (CatalogInfo.SourceURL in main.go).
 
+// ExampleBaseURL is the public FHIR R4 endpoint every documented example points
+// at: the SMART Health IT R4 sandbox (also listed in the fhir_servers view).
+//
+// It is deliberately NOT the public HAPI R4 server. HAPI is a shared scratchpad
+// — anyone can POST to it, resources are routinely deleted, and an example
+// pinned to a logical id there rots (fhir_read's old `Patient/example` example
+// answered HTTP 404). Worse, HAPI answers an UNFILTERED search with a Bundle
+// that carries a `next` link and no entries, forever, so those examples returned
+// nothing at all. The SMART sandbox serves a fixed synthetic Synthea dataset
+// that has not changed since 2021, so a pinned id keeps resolving and an
+// unfiltered search returns real rows on the first page.
+const ExampleBaseURL = "https://r4.smarthealthit.org"
+
+// ExamplePatientID is a Patient logical id that exists on ExampleBaseURL and is
+// stable (part of the frozen Synthea seed set): family name "Ruecker".
+const ExamplePatientID = "45a69bf0-7116-4f9f-a1d9-29700439b4a4"
+
 // executableExamples (VGI509) is a JSON list of self-contained, catalog-qualified
-// examples an agent can run as-is against an attached worker. The base URL points
-// at the public HAPI FHIR R4 test server; expected_result is omitted on purpose.
+// examples an agent can run as-is against an attached worker. Every list-style
+// example carries an explicit LIMIT: these scans stream page by page over the
+// network, so a bounded example is both faster and the behaviour we want to
+// demonstrate. expected_result is omitted on purpose.
 const executableExamples = `[
   {
-    "description": "List Patients (filtered to one family so the example returns a single fast page) with core demographic fields flattened into columns.",
-    "sql": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers')"
+    "description": "List Patients with core demographic fields flattened into columns.",
+    "sql": "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('` + ExampleBaseURL + `') LIMIT 20"
   },
   {
     "description": "List numeric Observations with their code, value, and unit.",
-    "sql": "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL"
+    "sql": "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('` + ExampleBaseURL + `') WHERE value IS NOT NULL LIMIT 20"
   },
   {
     "description": "Search Condition resources and return their logical ids.",
-    "sql": "SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition')"
+    "sql": "SELECT id FROM fhir.main.fhir_search('` + ExampleBaseURL + `', 'Condition') LIMIT 20"
   },
   {
     "description": "Expand a server's supported resource types and REST interactions.",
-    "sql": "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4')"
+    "sql": "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('` + ExampleBaseURL + `')"
   }
 ]`
 
@@ -104,6 +130,100 @@ func (c *Cursor[T]) nextSlice() (slice []T, done bool) {
 	slice = c.Rows[c.Offset:end]
 	c.Offset = end
 	return slice, false
+}
+
+// PageCursor is the STREAMING cursor used by every search-backed table function
+// (fhir_search / fhir_patients / fhir_observations). Unlike Cursor, which is
+// handed a fully materialised slice, it holds only the CURRENT Bundle page plus
+// the URL of the next one, and fetches that next page lazily when the current
+// page is drained.
+//
+// WHY (VGI911, the uncancellable-first-batch rule): the previous design fetched
+// every page in NewState before Process emitted anything, so the first row of
+// `SELECT * FROM fhir_patients(base) LIMIT 10` cost the WHOLE crawl — up to
+// maxResults/_count round-trips (20 by default) against a public server, and
+// against a server that advertises a `next` link on an empty page (the public
+// HAPI R4 server does) it never finished at all and only stopped when the 30s
+// context deadline fired. A VGI scan blocked inside its first batch cannot be
+// interrupted, so that wedges the client. Streaming makes first-row latency one
+// HTTP round-trip regardless of result-set size.
+//
+// Every field is exported and gob-encodable because the SDK round-trips this
+// state through the stateless HTTP transport's continuation token — the same
+// invariant Cursor documents above. Offset/NextURL/Fetched all advance BEFORE
+// the batch is yielded, so a resumed tick never re-emits a page.
+type PageCursor[T any] struct {
+	// Rows is the current page, already flattened.
+	Rows []T
+	// Offset is the index of the next unemitted row within Rows.
+	Offset int
+	// NextURL is the page to fetch once Rows is drained ("" = search over).
+	NextURL string
+	// Fetched counts rows collected across pages, bounded by Max.
+	Fetched int
+	// Token is the bearer token to replay on each page request.
+	Token string
+	// Max bounds the total rows the scan will collect (<= 0 means the
+	// package default).
+	Max int
+}
+
+// newPageCursor seeds a streaming cursor at the first page of a search.
+func newPageCursor[T any](opts FetchOptions, resourceType string) (PageCursor[T], error) {
+	start, err := SearchStartURL(opts, resourceType)
+	if err != nil {
+		return PageCursor[T]{}, err
+	}
+	maxResults := opts.MaxResults
+	if maxResults <= 0 {
+		maxResults = defaultMaxResults
+	}
+	return PageCursor[T]{NextURL: start, Token: opts.Token, Max: maxResults}, nil
+}
+
+// nextSlice returns the next bounded slice of rows to emit, fetching the next
+// page when the current one is drained, and advances the cursor past them. It
+// reports done=true when the search is exhausted, at which point Process should
+// call out.Finish().
+//
+// fetchPage does one HTTP round-trip and returns that page's rows plus the URL
+// of the page after it; each table function supplies its own so the raw Bundle
+// entries are flattened into its row type.
+func (c *PageCursor[T]) nextSlice(fetchPage func(pageURL string) ([]T, string, error)) ([]T, bool, error) {
+	for {
+		if c.Offset < len(c.Rows) {
+			end := c.Offset + rowsPerTick
+			if end > len(c.Rows) {
+				end = len(c.Rows)
+			}
+			slice := c.Rows[c.Offset:end]
+			c.Offset = end
+			return slice, false, nil
+		}
+		max := c.Max
+		if max <= 0 {
+			max = defaultMaxResults
+		}
+		if c.NextURL == "" || c.Fetched >= max {
+			return nil, true, nil
+		}
+		rows, following, err := fetchPage(c.NextURL)
+		if err != nil {
+			return nil, false, err
+		}
+		// A page with no resources ends the search. Some servers (the public
+		// HAPI R4 server among them) advertise a `next` link on an empty page,
+		// so trusting `next` alone is an unbounded crawl.
+		if len(rows) == 0 {
+			c.Rows, c.Offset, c.NextURL = nil, 0, ""
+			return nil, true, nil
+		}
+		if c.Fetched+len(rows) > max {
+			rows = rows[:max-c.Fetched]
+		}
+		c.Fetched += len(rows)
+		c.Rows, c.Offset, c.NextURL = rows, 0, following
+	}
 }
 
 // optsFrom builds FetchOptions from the bound common arguments. query/token are
@@ -162,7 +282,16 @@ type searchArgs struct {
 }
 
 type searchState struct {
-	Cursor[Resource]
+	PageCursor[Resource]
+}
+
+// fetchPage reads one Bundle page of the generic search and flattens it.
+func (s *searchState) fetchPage(pageURL string) ([]Resource, string, error) {
+	raws, next, err := SearchPage(context.Background(), FetchOptions{Token: s.Token}, pageURL)
+	if err != nil {
+		return nil, "", err
+	}
+	return FlattenResources(raws), next, nil
 }
 
 // SearchFunction lists resources of one type via a FHIR search.
@@ -206,18 +335,18 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 			// as a described [{description,sql}] JSON list (byte-identical to Examples).
 			"vgi.example_queries": `[` +
 				`{"description":"List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",` +
-				`"sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
+				`"sql":"SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;"},` +
 				`{"description":"Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",` +
-				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);"}` +
+				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Patient', query := 'name=smith', count := 100);"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');",
+				SQL:         "SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;",
 				Description: "List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",
 			},
 			{
-				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);",
+				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Patient', query := 'name=smith', count := 100);",
 				Description: "Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",
 			},
 		},
@@ -238,16 +367,21 @@ func (f *SearchFunction) NewState(params *vgi.ProcessParams) (*searchState, erro
 	if isNullArg(params.Args, 0) || isNullArg(params.Args, 1) {
 		return &searchState{}, nil
 	}
-	res, err := SearchResources(context.Background(),
+	// No network I/O here: seed the cursor at the first page URL and let
+	// Process fetch it, so the scan's first batch costs one round-trip.
+	cur, err := newPageCursor[Resource](
 		optsFrom(args.BaseURL, args.Token, args.Query, args.Count), args.ResourceType)
 	if err != nil {
 		return nil, err
 	}
-	return &searchState{Cursor[Resource]{Rows: res}}, nil
+	return &searchState{cur}, nil
 }
 
 func (f *SearchFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *searchState, out *vgirpc.OutputCollector) error {
-	r, done := state.nextSlice()
+	r, done, err := state.nextSlice(state.fetchPage)
+	if err != nil {
+		return err
+	}
 	if done {
 		return out.Finish()
 	}
@@ -321,12 +455,12 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 			// carrier drops descriptions, so re-supply them as a described list.
 			"vgi.example_queries": `[` +
 				`{"description":"Read the canonical FHIR example Patient (logical id 'example') and return its full JSON.",` +
-				`"sql":"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');"}` +
+				`"sql":"SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');",
+				SQL:         "SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');",
 				Description: "Read the canonical FHIR example Patient (logical id 'example') and return its full JSON.",
 			},
 		},
@@ -396,7 +530,20 @@ type patientsArgs struct {
 }
 
 type patientsState struct {
-	Cursor[Patient]
+	PageCursor[Patient]
+}
+
+// fetchPage reads one Bundle page of the Patient search and flattens it.
+func (s *patientsState) fetchPage(pageURL string) ([]Patient, string, error) {
+	raws, next, err := SearchPage(context.Background(), FetchOptions{Token: s.Token}, pageURL)
+	if err != nil {
+		return nil, "", err
+	}
+	rows, err := FlattenPatients(raws)
+	if err != nil {
+		return nil, "", err
+	}
+	return rows, next, nil
 }
 
 // PatientsFunction lists Patients with core fields flattened.
@@ -444,18 +591,18 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 			// carrier drops descriptions, so re-supply them as a described list.
 			"vgi.example_queries": `[` +
 				`{"description":"List Patients with their core demographic fields flattened into columns.",` +
-				`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');"},` +
+				`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;"},` +
 				`{"description":"Count Patients whose family name is 'smith' (across all Bundle pages).",` +
-				`"sql":"SELECT count(*) FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=smith');"}` +
+				`"sql":"SELECT count(*) FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');",
+				SQL:         "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;",
 				Description: "List Patients with their core demographic fields flattened into columns.",
 			},
 			{
-				SQL:         "SELECT count(*) FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=smith');",
+				SQL:         "SELECT count(*) FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');",
 				Description: "Count Patients whose family name is 'smith' (across all Bundle pages).",
 			},
 		},
@@ -476,16 +623,21 @@ func (f *PatientsFunction) NewState(params *vgi.ProcessParams) (*patientsState, 
 	if isNullArg(params.Args, 0) {
 		return &patientsState{}, nil
 	}
-	patients, err := FetchPatients(context.Background(),
-		optsFrom(args.BaseURL, args.Token, args.Query, args.Count))
+	// No network I/O here: seed the cursor at the first page URL and let
+	// Process fetch it, so the scan's first batch costs one round-trip.
+	cur, err := newPageCursor[Patient](
+		optsFrom(args.BaseURL, args.Token, args.Query, args.Count), "Patient")
 	if err != nil {
 		return nil, err
 	}
-	return &patientsState{Cursor[Patient]{Rows: patients}}, nil
+	return &patientsState{cur}, nil
 }
 
 func (f *PatientsFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *patientsState, out *vgirpc.OutputCollector) error {
-	p, done := state.nextSlice()
+	p, done, err := state.nextSlice(state.fetchPage)
+	if err != nil {
+		return err
+	}
 	if done {
 		return out.Finish()
 	}
@@ -534,7 +686,20 @@ type observationsArgs struct {
 }
 
 type observationsState struct {
-	Cursor[Observation]
+	PageCursor[Observation]
+}
+
+// fetchPage reads one Bundle page of the Observation search and flattens it.
+func (s *observationsState) fetchPage(pageURL string) ([]Observation, string, error) {
+	raws, next, err := SearchPage(context.Background(), FetchOptions{Token: s.Token}, pageURL)
+	if err != nil {
+		return nil, "", err
+	}
+	rows, err := FlattenObservations(raws)
+	if err != nil {
+		return nil, "", err
+	}
+	return rows, next, nil
 }
 
 // ObservationsFunction lists Observations with core fields flattened.
@@ -586,18 +751,18 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 			// carrier drops descriptions, so re-supply them as a described list.
 			"vgi.example_queries": `[` +
 				`{"description":"List numeric Observations with their code, value, and unit.",` +
-				`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
+				`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;"},` +
 				`{"description":"List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",` +
-				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=8867-4');"}` +
+				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://r4.smarthealthit.org', query := 'code=29463-7') LIMIT 20;"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;",
+				SQL:         "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;",
 				Description: "List numeric Observations with their code, value, and unit.",
 			},
 			{
-				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=8867-4');",
+				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://r4.smarthealthit.org', query := 'code=29463-7') LIMIT 20;",
 				Description: "List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",
 			},
 		},
@@ -620,16 +785,21 @@ func (f *ObservationsFunction) NewState(params *vgi.ProcessParams) (*observation
 	if isNullArg(params.Args, 0) {
 		return &observationsState{}, nil
 	}
-	obs, err := FetchObservations(context.Background(),
-		optsFrom(args.BaseURL, args.Token, args.Query, args.Count))
+	// No network I/O here: seed the cursor at the first page URL and let
+	// Process fetch it, so the scan's first batch costs one round-trip.
+	cur, err := newPageCursor[Observation](
+		optsFrom(args.BaseURL, args.Token, args.Query, args.Count), "Observation")
 	if err != nil {
 		return nil, err
 	}
-	return &observationsState{Cursor[Observation]{Rows: obs}}, nil
+	return &observationsState{cur}, nil
 }
 
 func (f *ObservationsFunction) Process(_ context.Context, _ *vgi.ProcessParams, state *observationsState, out *vgirpc.OutputCollector) error {
-	o, done := state.nextSlice()
+	o, done, err := state.nextSlice(state.fetchPage)
+	if err != nil {
+		return err
+	}
 	if done {
 		return out.Finish()
 	}
@@ -728,18 +898,18 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 			// carrier drops descriptions, so re-supply them as a described list.
 			"vgi.example_queries": `[` +
 				`{"description":"List every resource type a FHIR server supports and the REST interactions available for each.",` +
-				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"},` +
+				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"},` +
 				`{"description":"Expand the supported REST interactions to one row per (resource type, interaction).",` +
-				`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+				`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
 				Description: "List every resource type a FHIR server supports and the REST interactions available for each.",
 			},
 			{
-				SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+				SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
 				Description: "Expand the supported REST interactions to one row per (resource type, interaction).",
 			},
 		},

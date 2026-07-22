@@ -109,14 +109,15 @@ func main() {
 			"vgi.support_policy_url": "https://github.com/Query-farm/vgi-fhir/blob/main/README.md",
 			// VGI152 agent-check suite: natural-language analyst tasks that
 			// `vgi-lint simulate` runs to measure how well an agent uses this
-			// worker. Each task names the public HAPI FHIR R4 test server as the
-			// base URL and pairs a prompt with the canonical answer SQL.
+			// worker. Each task names the SMART Health IT R4 sandbox as the base
+			// URL (a frozen synthetic Synthea dataset, so the expected answers stay
+			// true) and pairs a prompt with the canonical answer SQL.
 			"vgi.agent_test_tasks": `[` +
-				`{"name":"has_chalmers_patient","prompt":"Using the FHIR R4 server at https://hapi.fhir.org/baseR4, determine whether there is at least one Patient whose family name is Chalmers. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Chalmers');","ignore_column_names":true},` +
-				`{"name":"has_numeric_observation","prompt":"From the FHIR R4 server at https://hapi.fhir.org/baseR4, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;","ignore_column_names":true},` +
-				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://hapi.fhir.org/baseR4 has any Condition resources. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');","ignore_column_names":true},` +
-				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://hapi.fhir.org/baseR4 and determine whether it advertises support for the Patient resource type. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4') WHERE resource_type = 'Patient';","ignore_column_names":true},` +
-				`{"name":"read_example_patient","prompt":"Read the Patient resource with logical id 'example' from the FHIR R4 server at https://hapi.fhir.org/baseR4 and determine whether its family name is 'Demo'. Answer with a single boolean.","reference_sql":"SELECT json_extract_string(resource, '$.name[0].family') = 'Demo' FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');","ignore_column_names":true},` +
+				`{"name":"has_ruecker_patient","prompt":"Using the FHIR R4 server at https://r4.smarthealthit.org, determine whether there is at least one Patient whose family name is Ruecker. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');","ignore_column_names":true},` +
+				`{"name":"has_numeric_observation","prompt":"From the FHIR R4 server at https://r4.smarthealthit.org, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL;","ignore_column_names":true},` +
+				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://r4.smarthealthit.org has any Condition resources. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition');","ignore_column_names":true},` +
+				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://r4.smarthealthit.org and determine whether it advertises support for the Patient resource type. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org') WHERE resource_type = 'Patient';","ignore_column_names":true},` +
+				`{"name":"read_patient_by_id","prompt":"Read the Patient resource with logical id '45a69bf0-7116-4f9f-a1d9-29700439b4a4' from the FHIR R4 server at https://r4.smarthealthit.org and determine whether its family name is 'Ruecker'. Answer with a single boolean.","reference_sql":"SELECT json_extract_string(resource, '$.name[0].family') = 'Ruecker' FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');","ignore_column_names":true},` +
 				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_servers WHERE base_url = 'https://hapi.fhir.org/baseR4';","ignore_column_names":true}` +
 				`]`,
 		}),
@@ -187,15 +188,15 @@ func main() {
 					`{"description":"List the curated public FHIR R4 test servers and whether each needs authentication.",` +
 					`"sql":"SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;"},` +
 					`{"description":"List Patients with their core demographic fields flattened into columns.",` +
-					`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4');"},` +
+					`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;"},` +
 					`{"description":"List numeric Observations with their code, value, and unit.",` +
-					`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4') WHERE value IS NOT NULL;"},` +
+					`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;"},` +
 					`{"description":"List the ids of Condition resources on a FHIR R4 server.",` +
-					`"sql":"SELECT id FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');"},` +
+					`"sql":"SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;"},` +
 					`{"description":"Read a single Patient resource by logical id and return its full JSON.",` +
-					`"sql":"SELECT resource FROM fhir.main.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', 'example');"},` +
+					`"sql":"SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');"},` +
 					`{"description":"Expand a server's supported REST interactions to one row per (resource type, interaction).",` +
-					`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"}` +
+					`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"}` +
 					`]`,
 			},
 		}),

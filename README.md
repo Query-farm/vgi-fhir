@@ -27,32 +27,35 @@ INSTALL vgi FROM community; LOAD vgi;
 -- LOCATION is the path to the compiled worker binary.
 ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION '/path/to/vgi-fhir-worker');
 
--- All patients (core fields flattened, full JSON in `raw`).
+-- Patients (core fields flattened, full JSON in `raw`). Every search-backed
+-- function STREAMS: it fetches one Bundle page per batch, so `LIMIT` stops the
+-- scan after a single HTTP round-trip instead of crawling every page first.
 SELECT id, family, given, gender, birth_date, active
-FROM fhir.fhir_patients('https://hapi.fhir.org/baseR4');
+FROM fhir.fhir_patients('https://r4.smarthealthit.org');
 
 -- All observations (valueQuantity flattened; non-numeric values are NULL).
 SELECT code, code_display, value, unit, subject
-FROM fhir.fhir_observations('https://hapi.fhir.org/baseR4');
+FROM fhir.fhir_observations('https://r4.smarthealthit.org');
 
 -- Generic search of any resource type (id + full resource JSON).
 SELECT id, resource
-FROM fhir.fhir_search('https://hapi.fhir.org/baseR4', 'Condition');
+FROM fhir.fhir_search('https://r4.smarthealthit.org', 'Condition');
 
 -- A raw search query string + a custom page size.
 SELECT id
 FROM fhir.fhir_search(
-  'https://hapi.fhir.org/baseR4', 'Patient',
+  'https://r4.smarthealthit.org', 'Patient',
   query := 'family=smith&gender=female',
   count := 50);
 
 -- One resource by id.
 SELECT resource
-FROM fhir.fhir_read('https://hapi.fhir.org/baseR4', 'Patient', '12345');
+FROM fhir.fhir_read('https://r4.smarthealthit.org', 'Patient',
+                    '45a69bf0-7116-4f9f-a1d9-29700439b4a4');
 
 -- What the server supports.
 SELECT resource_type, interactions
-FROM fhir.fhir_capabilities('https://hapi.fhir.org/baseR4');
+FROM fhir.fhir_capabilities('https://r4.smarthealthit.org');
 
 -- A bearer token for protected servers (named option on every function).
 SELECT id FROM fhir.fhir_patients('https://server/fhir', token := 'BEARER_TOKEN');
@@ -66,7 +69,7 @@ base).
 
 | Function | Returns | Description |
 | --- | --- | --- |
-| `fhir_search(base_url, resource_type)` | `id, resource VARCHAR` | One row per resource from a search of `{base}/{resourceType}`; `resource` is the full JSON. Follows `next` links up to `max_results` (1000). |
+| `fhir_search(base_url, resource_type)` | `id, resource VARCHAR` | One row per resource from a search of `{base}/{resourceType}`; `resource` is the full JSON. Streams page by page, following `next` links up to `max_results` (1000) or until a page comes back empty. |
 | `fhir_read(base_url, resource_type, id)` | `resource VARCHAR` | A single resource read from `{base}/{resourceType}/{id}` (one row). |
 | `fhir_patients(base_url)` | `id, family, given, gender, birth_date VARCHAR, active BOOLEAN, raw VARCHAR` | All Patients, core fields flattened; `raw` is the full Patient JSON. |
 | `fhir_observations(base_url)` | `id, status, code, code_display VARCHAR, value DOUBLE, unit, effective, subject, raw VARCHAR` | All Observations; `valueQuantity` flattened (non-numeric → NULL `value`); `raw` is the full JSON. |
