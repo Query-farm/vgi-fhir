@@ -1,0 +1,27 @@
+# Private graders for the agent-suitability suite (`vgi-lint simulate`).
+#
+# The prompts are published in the catalog's vgi.agent_test_tasks tag
+# (cmd/vgi-fhir-worker/main.go); the answers live here, keyed by task name, so
+# the agent being graded never sees them (VGI416). vgi-lint discovers this file
+# in the directory it runs from. Every reference targets the SMART Health IT R4
+# sandbox (a frozen synthetic Synthea dataset) or the built-in fhir_servers view.
+
+tasks:
+  - name: has_ruecker_patient
+    reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');"
+    ignore_column_names: true
+  - name: has_numeric_observation
+    reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL;"
+    ignore_column_names: true
+  - name: has_conditions
+    reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition');"
+    ignore_column_names: true
+  - name: supports_patient_type
+    reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org') WHERE resource_type = 'Patient';"
+    ignore_column_names: true
+  - name: read_patient_by_id
+    reference_sql: "SELECT json_extract_string(resource, '$.name[0].family') = 'Ruecker' FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');"
+    ignore_column_names: true
+  - name: directory_lists_hapi
+    reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_servers WHERE base_url = 'https://hapi.fhir.org/baseR4';"
+    ignore_column_names: true

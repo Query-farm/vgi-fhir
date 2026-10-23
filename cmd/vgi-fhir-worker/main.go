@@ -111,14 +111,15 @@ func main() {
 			// `vgi-lint simulate` runs to measure how well an agent uses this
 			// worker. Each task names the SMART Health IT R4 sandbox as the base
 			// URL (a frozen synthetic Synthea dataset, so the expected answers stay
-			// true) and pairs a prompt with the canonical answer SQL.
+			// true). Only name/prompt are published here: the answer SQL lives in
+			// the private vgi-agent-tests.yaml sidecar (VGI416), keyed by name.
 			"vgi.agent_test_tasks": `[` +
-				`{"name":"has_ruecker_patient","prompt":"Using the FHIR R4 server at https://r4.smarthealthit.org, determine whether there is at least one Patient whose family name is Ruecker. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');","ignore_column_names":true},` +
-				`{"name":"has_numeric_observation","prompt":"From the FHIR R4 server at https://r4.smarthealthit.org, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL;","ignore_column_names":true},` +
-				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://r4.smarthealthit.org has any Condition resources. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition');","ignore_column_names":true},` +
-				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://r4.smarthealthit.org and determine whether it advertises support for the Patient resource type. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org') WHERE resource_type = 'Patient';","ignore_column_names":true},` +
-				`{"name":"read_patient_by_id","prompt":"Read the Patient resource with logical id '45a69bf0-7116-4f9f-a1d9-29700439b4a4' from the FHIR R4 server at https://r4.smarthealthit.org and determine whether its family name is 'Ruecker'. Answer with a single boolean.","reference_sql":"SELECT json_extract_string(resource, '$.name[0].family') = 'Ruecker' FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');","ignore_column_names":true},` +
-				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean.","reference_sql":"SELECT count(*) > 0 FROM fhir.main.fhir_servers WHERE base_url = 'https://hapi.fhir.org/baseR4';","ignore_column_names":true}` +
+				`{"name":"has_ruecker_patient","prompt":"Using the FHIR R4 server at https://r4.smarthealthit.org, determine whether there is at least one Patient whose family name is Ruecker. Answer with a single boolean."},` +
+				`{"name":"has_numeric_observation","prompt":"From the FHIR R4 server at https://r4.smarthealthit.org, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean."},` +
+				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://r4.smarthealthit.org has any Condition resources. Answer with a single boolean."},` +
+				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://r4.smarthealthit.org and determine whether it advertises support for the Patient resource type. Answer with a single boolean."},` +
+				`{"name":"read_patient_by_id","prompt":"Read the Patient resource with logical id '45a69bf0-7116-4f9f-a1d9-29700439b4a4' from the FHIR R4 server at https://r4.smarthealthit.org and determine whether its family name is 'Ruecker'. Answer with a single boolean."},` +
+				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean."}` +
 				`]`,
 		}),
 		vgi.WithCatalogInfo(vgi.CatalogInfo{
