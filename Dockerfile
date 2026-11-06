@@ -13,9 +13,9 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage -----------------------------------------------------------
-# CGO is REQUIRED: the vgi-go SDK links DuckDB statically via the duckdb-go
+# CGO is REQUIRED: the vgi-go SDK links the Haybarn 2.0 engine statically via the haybarn-go
 # bindings (a CGO_ENABLED=0 build fails with "build constraints exclude all Go
-# files" in duckdb-go-bindings), so gcc/g++/libc6-dev must be present. Pinned
+# files" in haybarn-go-bindings), so gcc/g++/libc6-dev must be present. Pinned
 # glibc (bookworm) matches the slim runtime below. Native per-arch runners in CI
 # build each platform — no cross-compilation.
 FROM golang:1.26-bookworm AS build

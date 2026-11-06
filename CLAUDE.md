@@ -185,7 +185,7 @@ Mirrors `vgi-scim`/`vgi-grpc`'s start/stop pattern:
 3. The Makefile exports `VGI_FHIR_WORKER` (the worker binary, used as the ATTACH
    `LOCATION`), `VGI_FHIR_TEST_URL` (`http://127.0.0.1:<n>`), and
    `VGI_FHIR_TEST_TOKEN` (the bearer token), all read by the `.test` files.
-4. `haybarn-unittest --test-dir . "test/sql/*"` runs the suite; the haybarn exit
+4. `haybarn-unittest --keep-home --test-dir . "test/sql/*"` runs the suite; the haybarn exit
    status is captured and returned, and a shell `trap` kills the mock server.
 
 `cmd/mockserver` and the Go tests share `internal/mockfhir.NewHandler`, which

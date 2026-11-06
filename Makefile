@@ -13,7 +13,7 @@
 #   make clean       Remove built binaries
 #
 # test-sql needs haybarn-unittest on PATH:
-#   uv tool install 'haybarn-unittest<2'
+#   uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'
 #   export PATH="$$HOME/.local/bin:$$PATH"
 
 WORKER_BIN  := vgi-fhir-worker
@@ -64,7 +64,7 @@ test-sql: build
 	VGI_FHIR_WORKER="$(WORKER_PATH)" \
 	VGI_FHIR_TEST_URL="http://127.0.0.1:$$PORT" \
 	VGI_FHIR_TEST_TOKEN="$(MOCK_TOKEN)" \
-		haybarn-unittest --test-dir "$(TEST_DIR)" "$(TEST_PATTERN)"; \
+		haybarn-unittest --keep-home --test-dir "$(TEST_DIR)" "$(TEST_PATTERN)"; \
 	STATUS=$$?; \
 	exit $$STATUS
 
