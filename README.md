@@ -24,8 +24,7 @@ version, `4.0.1`).
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
 
--- LOCATION is the path to the compiled worker binary.
-ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION '/path/to/vgi-fhir-worker');
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.2.1');
 
 -- Patients (core fields flattened, full JSON in `raw`). Every search-backed
 -- function STREAMS: it fetches one Bundle page per batch, so `LIMIT` stops the
@@ -60,6 +59,41 @@ FROM fhir.fhir_capabilities('https://r4.smarthealthit.org');
 -- A bearer token for protected servers (named option on every function).
 SELECT id FROM fhir.fhir_patients('https://server/fhir', token := 'BEARER_TOKEN');
 ```
+
+## Quick start
+
+Every [GitHub release](https://github.com/Query-farm/vgi-fhir/releases) ships a prebuilt worker binary. The `vgi` extension downloads the one for your platform, checks its SHA-256 and caches it, so there is nothing to install besides DuckDB:
+
+```sql
+INSTALL vgi FROM community;
+LOAD vgi;
+
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.2.1');
+
+-- List the curated public FHIR R4 test servers and whether each needs authentication.
+SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;
+
+-- List Patients with their core demographic fields flattened into columns.
+SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;
+```
+
+Every function fetches from the FHIR server URL you pass. Many public test servers are open; for a protected server pass an OAuth bearer token with `token := '…'` (see [Named options](#named-options) and [Behaviour](#behaviour)).
+
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64) and Windows (x86-64). `github-auto://` needs an explicit release tag; change `@v0.2.1` to move to a newer release.
+
+### Other ways to run it
+
+- **Docker** (the image bundles the worker; needs a container runtime):
+
+  ```sql
+  ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-fhir:0.2.1');
+  ```
+
+- **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-fhir/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
+
+### Build from source
+
+To build the worker yourself, see [Building](#building).
 
 ## Functions
 
