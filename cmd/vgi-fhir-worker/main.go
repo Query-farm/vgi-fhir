@@ -49,7 +49,9 @@ func main() {
 		// description tags drive LLM/agent tool selection and listing pages.
 		vgi.WithCatalogTags(map[string]string{
 			"source":    "vgi-fhir",
-			"vgi.title": "FHIR R4 REST Query Connector",
+			"vgi.title": "FHIR R4 Connector",
+			// VGI148: one-sentence listing subtitle shown under the title.
+			"vgi.subtitle": "Query HL7 FHIR R4 REST servers from SQL: patients, observations, generic search, reads by id, and server capabilities.",
 			"vgi.keywords": `["fhir","hl7","fhir r4","healthcare","ehr","patient",` +
 				`"observation","clinical","rest","json","capabilitystatement",` +
 				`"interoperability","medical records"]`,

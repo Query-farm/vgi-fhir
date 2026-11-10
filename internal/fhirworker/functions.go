@@ -63,10 +63,13 @@ const rowsPerTick = 64
 // Per-object vgi.source_url is intentionally NOT set (VGI139): source_url
 // belongs only on the catalog object (CatalogInfo.SourceURL in main.go).
 
-// ExampleBaseURL is the public FHIR R4 endpoint every documented example points
+// ExampleBaseURL is the public FHIR R4 endpoint most documented examples point
 // at: the SMART Health IT R4 sandbox (also listed in the fhir_servers view).
+// A few examples use the public HAPI R4 server instead, so the examples show
+// that base_url is a per-call argument (VGI1003); those are always FILTERED
+// searches or the CapabilityStatement, never an unfiltered scan or a pinned id.
 //
-// It is deliberately NOT the public HAPI R4 server. HAPI is a shared scratchpad
+// The unfiltered/pinned-id examples are deliberately NOT on the HAPI server. HAPI is a shared scratchpad
 // — anyone can POST to it, resources are routinely deleted, and an example
 // pinned to a logical id there rots (fhir_read's old `Patient/example` example
 // answered HTTP 404). Worse, HAPI answers an UNFILTERED search with a Bundle
@@ -336,8 +339,8 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 			"vgi.example_queries": `[` +
 				`{"description":"List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",` +
 				`"sql":"SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;"},` +
-				`{"description":"Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",` +
-				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Patient', query := 'name=smith', count := 100);"}` +
+				`{"description":"Search Patients named 'smith' on the public HAPI R4 server, 100 per page, returning id plus the raw resource JSON.",` +
+				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
@@ -346,8 +349,8 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				Description: "List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",
 			},
 			{
-				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Patient', query := 'name=smith', count := 100);",
-				Description: "Search Patients whose name contains 'smith', 100 per page, returning id plus the raw resource JSON.",
+				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);",
+				Description: "Search Patients named 'smith' on the public HAPI R4 server, 100 per page, returning id plus the raw resource JSON.",
 			},
 		},
 	}
@@ -592,8 +595,8 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 			"vgi.example_queries": `[` +
 				`{"description":"List Patients with their core demographic fields flattened into columns.",` +
 				`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;"},` +
-				`{"description":"Count Patients whose family name is 'smith' (across all Bundle pages).",` +
-				`"sql":"SELECT count(*) FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');"}` +
+				`{"description":"List Patients with family name Smith on the public HAPI R4 server.",` +
+				`"sql":"SELECT id, family, given, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Smith') LIMIT 20;"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
@@ -602,8 +605,8 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				Description: "List Patients with their core demographic fields flattened into columns.",
 			},
 			{
-				SQL:         "SELECT count(*) FROM fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker');",
-				Description: "Count Patients whose family name is 'smith' (across all Bundle pages).",
+				SQL:         "SELECT id, family, given, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Smith') LIMIT 20;",
+				Description: "List Patients with family name Smith on the public HAPI R4 server.",
 			},
 		},
 	}
@@ -752,8 +755,8 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 			"vgi.example_queries": `[` +
 				`{"description":"List numeric Observations with their code, value, and unit.",` +
 				`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;"},` +
-				`{"description":"List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",` +
-				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://r4.smarthealthit.org', query := 'code=29463-7') LIMIT 20;"}` +
+				`{"description":"List body-weight Observations (LOINC 29463-7) on the public HAPI R4 server with their value, unit, and effective time.",` +
+				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=29463-7') LIMIT 20;"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
@@ -762,8 +765,8 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 				Description: "List numeric Observations with their code, value, and unit.",
 			},
 			{
-				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://r4.smarthealthit.org', query := 'code=29463-7') LIMIT 20;",
-				Description: "List heart-rate Observations (LOINC 8867-4) with their value, unit, and effective time.",
+				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=29463-7') LIMIT 20;",
+				Description: "List body-weight Observations (LOINC 29463-7) on the public HAPI R4 server with their value, unit, and effective time.",
 			},
 		},
 	}
@@ -898,14 +901,14 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 			// carrier drops descriptions, so re-supply them as a described list.
 			"vgi.example_queries": `[` +
 				`{"description":"List every resource type a FHIR server supports and the REST interactions available for each.",` +
-				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"},` +
+				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"},` +
 				`{"description":"Expand the supported REST interactions to one row per (resource type, interaction).",` +
 				`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"}` +
 				`]`,
 		},
 		Examples: []vgi.CatalogExample{
 			{
-				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
+				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
 				Description: "List every resource type a FHIR server supports and the REST interactions available for each.",
 			},
 			{
@@ -992,7 +995,7 @@ func registerServersView(w *vgi.Worker) {
 			"description":   "What the endpoint is and what data it holds.",
 		},
 		Tags: map[string]string{
-			"vgi.title":    "Public FHIR R4 Server Directory",
+			"vgi.title":    "Public FHIR Servers",
 			"vgi.category": "Server Discovery",
 			"vgi.doc_llm": "A static, credential-free directory of well-known public HL7 FHIR R4 " +
 				"endpoints. Each row pairs a human name with the service base_url to pass as the " +
