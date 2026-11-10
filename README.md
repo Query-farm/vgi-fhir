@@ -24,7 +24,7 @@ version, `4.0.1`).
 ```sql
 INSTALL vgi FROM community; LOAD vgi;
 
-ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.2.1');
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.3.0');
 
 -- Patients (core fields flattened, full JSON in `raw`). Every search-backed
 -- function STREAMS: it fetches one Bundle page per batch, so `LIMIT` stops the
@@ -68,7 +68,7 @@ Every [GitHub release](https://github.com/Query-farm/vgi-fhir/releases) ships a 
 INSTALL vgi FROM community;
 LOAD vgi;
 
-ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.2.1');
+ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'github-auto://Query-farm/vgi-fhir@v0.3.0');
 
 -- List the curated public FHIR R4 test servers and whether each needs authentication.
 SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;
@@ -79,14 +79,14 @@ SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https
 
 Every function fetches from the FHIR server URL you pass. Many public test servers are open; for a protected server pass an OAuth bearer token with `token := '…'` (see [Named options](#named-options) and [Behaviour](#behaviour)).
 
-Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64) and Windows (x86-64). `github-auto://` needs an explicit release tag; change `@v0.2.1` to move to a newer release.
+Prebuilt binaries cover macOS (Apple silicon), Linux (x86-64 and arm64) and Windows (x86-64). `github-auto://` needs an explicit release tag; change `@v0.3.0` to move to a newer release.
 
 ### Other ways to run it
 
 - **Docker** (the image bundles the worker; needs a container runtime):
 
   ```sql
-  ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-fhir:0.2.1');
+  ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION 'docker://ghcr.io/query-farm/vgi-fhir:0.3.0');
   ```
 
 - **Manual download.** Download the archive for your platform from the [releases page](https://github.com/Query-farm/vgi-fhir/releases), verify it against its `.sha256` file (a cosign `.cosign.bundle` is published alongside), unpack it, and set `LOCATION` to the path of the extracted worker executable.
