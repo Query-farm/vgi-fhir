@@ -334,25 +334,11 @@ func (f *SearchFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"resource","type":"VARCHAR","description":"The full matched resource as a JSON string."}` +
 				`]`,
 			// VGI515 described examples: the native duckdb_functions().examples
-			// carrier drops descriptions, so the same examples are re-supplied here
-			// as a described [{description,sql}] JSON list (byte-identical to Examples).
-			"vgi.example_queries": `[` +
-				`{"description":"List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",` +
-				`"sql":"SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;"},` +
-				`{"description":"Search Patients named 'smith' on the public HAPI R4 server, 100 per page, returning id plus the raw resource JSON.",` +
-				`"sql":"SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);"}` +
-				`]`,
+			// carrier drops descriptions, so the same examples are re-supplied as a
+			// described [{description,sql}] JSON list generated from searchExamples.
+			"vgi.example_queries": ExampleQueriesJSON(searchExamples),
 		},
-		Examples: []vgi.CatalogExample{
-			{
-				SQL:         "SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;",
-				Description: "List the ids of all Condition resources on a FHIR R4 server (paging through Bundle next links).",
-			},
-			{
-				SQL:         "SELECT id, resource FROM fhir.main.fhir_search('https://hapi.fhir.org/baseR4', 'Patient', query := 'name=smith', count := 100);",
-				Description: "Search Patients named 'smith' on the public HAPI R4 server, 100 per page, returning id plus the raw resource JSON.",
-			},
-		},
+		Examples: searchExamples,
 	}
 }
 
@@ -443,7 +429,7 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 				"[read](https://hl7.org/fhir/R4/http.html#read) interaction).\n\n" +
 				"### Usage\n\n" +
 				"Call it with a FHIR R4 base URL, a resource type, and a logical id " +
-				"(for example `Patient` / `example`) to fetch that one resource as " +
+				"(for example `Patient` and a logical id listed by `fhir_patients`) to fetch that one resource as " +
 				"JSON; runnable statements are attached as this function's examples.\n\n" +
 				"### Notes\n\n" +
 				"- Returns exactly one row when the resource exists; a missing " +
@@ -454,19 +440,12 @@ func (f *ReadFunction) Metadata() vgi.FunctionMetadata {
 			"vgi.result_columns_schema": `[` +
 				`{"name":"resource","type":"VARCHAR","description":"The requested resource as a JSON string."}` +
 				`]`,
-			// VGI515 described examples (see fhir_search): the native examples
-			// carrier drops descriptions, so re-supply them as a described list.
-			"vgi.example_queries": `[` +
-				`{"description":"Read the canonical FHIR example Patient (logical id 'example') and return its full JSON.",` +
-				`"sql":"SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');"}` +
-				`]`,
+			// VGI515 described examples: the native duckdb_functions().examples
+			// carrier drops descriptions, so the same examples are re-supplied as a
+			// described [{description,sql}] JSON list generated from readExamples.
+			"vgi.example_queries": ExampleQueriesJSON(readExamples),
 		},
-		Examples: []vgi.CatalogExample{
-			{
-				SQL:         "SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');",
-				Description: "Read the canonical FHIR example Patient (logical id 'example') and return its full JSON.",
-			},
-		},
+		Examples: readExamples,
 	}
 }
 
@@ -590,25 +569,12 @@ func (f *PatientsFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"active","type":"BOOLEAN","description":"Whether the Patient record is in active use."},` +
 				`{"name":"raw","type":"VARCHAR","description":"The full Patient resource as a JSON string."}` +
 				`]`,
-			// VGI515 described examples (see fhir_search): the native examples
-			// carrier drops descriptions, so re-supply them as a described list.
-			"vgi.example_queries": `[` +
-				`{"description":"List Patients with their core demographic fields flattened into columns.",` +
-				`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;"},` +
-				`{"description":"List Patients with family name Smith on the public HAPI R4 server.",` +
-				`"sql":"SELECT id, family, given, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Smith') LIMIT 20;"}` +
-				`]`,
+			// VGI515 described examples: the native duckdb_functions().examples
+			// carrier drops descriptions, so the same examples are re-supplied as a
+			// described [{description,sql}] JSON list generated from patientsExamples.
+			"vgi.example_queries": ExampleQueriesJSON(patientsExamples),
 		},
-		Examples: []vgi.CatalogExample{
-			{
-				SQL:         "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;",
-				Description: "List Patients with their core demographic fields flattened into columns.",
-			},
-			{
-				SQL:         "SELECT id, family, given, birth_date FROM fhir.main.fhir_patients('https://hapi.fhir.org/baseR4', query := 'family=Smith') LIMIT 20;",
-				Description: "List Patients with family name Smith on the public HAPI R4 server.",
-			},
-		},
+		Examples: patientsExamples,
 	}
 }
 
@@ -750,25 +716,12 @@ func (f *ObservationsFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"subject","type":"VARCHAR","description":"Reference to the subject (usually Patient/{id})."},` +
 				`{"name":"raw","type":"VARCHAR","description":"The full Observation resource as a JSON string."}` +
 				`]`,
-			// VGI515 described examples (see fhir_search): the native examples
-			// carrier drops descriptions, so re-supply them as a described list.
-			"vgi.example_queries": `[` +
-				`{"description":"List numeric Observations with their code, value, and unit.",` +
-				`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;"},` +
-				`{"description":"List body-weight Observations (LOINC 29463-7) on the public HAPI R4 server with their value, unit, and effective time.",` +
-				`"sql":"SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=29463-7') LIMIT 20;"}` +
-				`]`,
+			// VGI515 described examples: the native duckdb_functions().examples
+			// carrier drops descriptions, so the same examples are re-supplied as a
+			// described [{description,sql}] JSON list generated from observationsExamples.
+			"vgi.example_queries": ExampleQueriesJSON(observationsExamples),
 		},
-		Examples: []vgi.CatalogExample{
-			{
-				SQL:         "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;",
-				Description: "List numeric Observations with their code, value, and unit.",
-			},
-			{
-				SQL:         "SELECT id, value, unit, effective FROM fhir.main.fhir_observations('https://hapi.fhir.org/baseR4', query := 'code=29463-7') LIMIT 20;",
-				Description: "List body-weight Observations (LOINC 29463-7) on the public HAPI R4 server with their value, unit, and effective time.",
-			},
-		},
+		Examples: observationsExamples,
 	}
 }
 
@@ -897,25 +850,12 @@ func (f *CapabilitiesFunction) Metadata() vgi.FunctionMetadata {
 				`{"name":"interactions","type":"VARCHAR[]","description":"REST interaction codes supported for that type (e.g. read, search-type, create)."}` +
 				`]`,
 			"vgi.executable_examples": executableExamples,
-			// VGI515 described examples (see fhir_search): the native examples
-			// carrier drops descriptions, so re-supply them as a described list.
-			"vgi.example_queries": `[` +
-				`{"description":"List every resource type a FHIR server supports and the REST interactions available for each.",` +
-				`"sql":"SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');"},` +
-				`{"description":"Expand the supported REST interactions to one row per (resource type, interaction).",` +
-				`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"}` +
-				`]`,
+			// VGI515 described examples: the native duckdb_functions().examples
+			// carrier drops descriptions, so the same examples are re-supplied as a
+			// described [{description,sql}] JSON list generated from capabilitiesExamples.
+			"vgi.example_queries": ExampleQueriesJSON(capabilitiesExamples),
 		},
-		Examples: []vgi.CatalogExample{
-			{
-				SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
-				Description: "List every resource type a FHIR server supports and the REST interactions available for each.",
-			},
-			{
-				SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
-				Description: "Expand the supported REST interactions to one row per (resource type, interaction).",
-			},
-		},
+		Examples: capabilitiesExamples,
 	}
 }
 

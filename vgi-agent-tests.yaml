@@ -25,3 +25,13 @@ tasks:
   - name: directory_lists_hapi
     reference_sql: "SELECT count(*) > 0 FROM fhir.main.fhir_servers WHERE base_url = 'https://hapi.fhir.org/baseR4';"
     ignore_column_names: true
+  # Composed tasks: the patient is found by name (fhir_patients) and their
+  # clinical rows come from a second function (fhir_search Condition /
+  # fhir_observations). The SMART sandbox is frozen, so an exact single-value
+  # compare is stable and fails on a wrong answer.
+  - name: ruecker_active_condition_count
+    reference_sql: "SELECT count(*) FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition', query := 'patient.family=Ruecker') AS c JOIN fhir.main.fhir_patients('https://r4.smarthealthit.org', query := 'family=Ruecker') AS p ON json_extract_string(c.resource, '$.subject.reference') = 'Patient/' || p.id WHERE json_extract_string(c.resource, '$.clinicalStatus.coding[0].code') = 'active';"
+    ignore_column_names: true
+  - name: ruecker_weight_at_alzheimers_onset
+    reference_sql: "WITH onset AS (SELECT json_extract_string(c.resource, '$.subject.reference') AS subject, CAST(json_extract_string(c.resource, '$.onsetDateTime')[:10] AS DATE) AS onset_date FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition', query := 'patient.family=Ruecker') AS c WHERE json_extract_string(c.resource, '$.code.text') ILIKE '%alzheimer%') SELECT round(arg_min(o.value, o.effective), 1) FROM fhir.main.fhir_observations('https://r4.smarthealthit.org', query := 'patient.family=Ruecker&code=29463-7') AS o JOIN onset ON o.subject = onset.subject WHERE CAST(o.effective[:10] AS DATE) >= onset.onset_date;"
+    ignore_column_names: true

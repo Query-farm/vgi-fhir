@@ -56,6 +56,20 @@ FROM fhir.fhir_read('https://r4.smarthealthit.org', 'Patient',
 SELECT resource_type, interactions
 FROM fhir.fhir_capabilities('https://r4.smarthealthit.org');
 
+-- Combine functions: one patient's Body Weight trend (fhir_observations),
+-- labelled with their name (fhir_patients) by joining on the subject
+-- reference. Table-function arguments must be literals, so both sides are
+-- filtered to the same patient id.
+SELECT p.given, p.family, o.effective[:10] AS measured_on,
+       round(o.value, 1) AS weight_kg,
+       round(o.value - lag(o.value) OVER (ORDER BY o.effective), 1) AS change_kg
+FROM fhir.fhir_observations('https://r4.smarthealthit.org',
+       query := 'patient=45a69bf0-7116-4f9f-a1d9-29700439b4a4&code=29463-7') AS o
+JOIN fhir.fhir_patients('https://r4.smarthealthit.org',
+       query := '_id=45a69bf0-7116-4f9f-a1d9-29700439b4a4') AS p
+  ON o.subject = 'Patient/' || p.id
+ORDER BY o.effective;
+
 -- A bearer token for protected servers (named option on every function).
 SELECT id FROM fhir.fhir_patients('https://server/fhir', token := 'BEARER_TOKEN');
 ```

@@ -13,6 +13,10 @@ require-env VGI_FHIR_TEST_TOKEN
 statement ok
 LOAD vgi;
 
+# json_extract_string for the composed fhir_read join below.
+statement ok
+LOAD json;
+
 statement ok
 ATTACH 'fhir' AS fhir (TYPE vgi, LOCATION '${VGI_FHIR_WORKER}');
 
@@ -87,6 +91,32 @@ ORDER BY i;
 ----
 read
 search-type
+
+# ---- composed: Observation.subject joins to 'Patient/' || id ----
+# The published composed examples join fhir_observations (and fhir_read) to
+# the patient on the flattened subject reference; this pins that key shape.
+
+query TTTR
+SELECT p.family, o.id, o.code_display, o.value
+FROM fhir.fhir_observations('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}') AS o
+JOIN fhir.fhir_patients('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}') AS p
+  ON o.subject = 'Patient/' || p.id
+ORDER BY o.id;
+----
+Smith	o1	Body Weight	72.5
+Smith	o2	Tobacco smoking status	NULL
+
+query TI
+WITH pt AS (
+  SELECT json_extract_string(resource, '$.id') AS patient_id
+  FROM fhir.fhir_read('${VGI_FHIR_TEST_URL}', 'Patient', 'p1', token := '${VGI_FHIR_TEST_TOKEN}')
+)
+SELECT pt.patient_id, count(o.value)
+FROM fhir.fhir_observations('${VGI_FHIR_TEST_URL}', token := '${VGI_FHIR_TEST_TOKEN}') AS o
+JOIN pt ON o.subject = 'Patient/' || pt.patient_id
+GROUP BY pt.patient_id;
+----
+p1	1
 
 # ---- wrong token surfaces a clean error (401) ----
 

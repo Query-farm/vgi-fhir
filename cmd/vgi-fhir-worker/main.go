@@ -121,7 +121,9 @@ func main() {
 				`{"name":"has_conditions","prompt":"Determine whether the FHIR R4 server at https://r4.smarthealthit.org has any Condition resources. Answer with a single boolean."},` +
 				`{"name":"supports_patient_type","prompt":"Read the CapabilityStatement of the FHIR R4 server at https://r4.smarthealthit.org and determine whether it advertises support for the Patient resource type. Answer with a single boolean."},` +
 				`{"name":"read_patient_by_id","prompt":"Read the Patient resource with logical id '45a69bf0-7116-4f9f-a1d9-29700439b4a4' from the FHIR R4 server at https://r4.smarthealthit.org and determine whether its family name is 'Ruecker'. Answer with a single boolean."},` +
-				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean."}` +
+				`{"name":"directory_lists_hapi","prompt":"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean."},` +
+				`{"name":"ruecker_active_condition_count","prompt":"On the FHIR R4 server at https://r4.smarthealthit.org, find the Patient whose family name is Ruecker and count that patient's Condition resources whose clinical status is 'active'. Answer with a single integer."},` +
+				`{"name":"ruecker_weight_at_alzheimers_onset","prompt":"On the FHIR R4 server at https://r4.smarthealthit.org, the Patient with family name Ruecker has a Condition for familial Alzheimer's disease. What was that patient's body weight in kg (Body Weight Observation, LOINC 29463-7) at the first measurement taken on or after the condition's onset date? Answer with a single DOUBLE rounded to 1 decimal place."}` +
 				`]`,
 		}),
 		vgi.WithCatalogInfo(vgi.CatalogInfo{
@@ -187,20 +189,7 @@ func main() {
 				// VGI506/VGI515 representative example queries for the schema
 				// (catalog-qualified). Each carries a human-readable description
 				// via the described [{description,sql}] JSON list form.
-				"vgi.example_queries": `[` +
-					`{"description":"List the curated public FHIR R4 test servers and whether each needs authentication.",` +
-					`"sql":"SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;"},` +
-					`{"description":"List Patients with their core demographic fields flattened into columns.",` +
-					`"sql":"SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;"},` +
-					`{"description":"List numeric Observations with their code, value, and unit.",` +
-					`"sql":"SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;"},` +
-					`{"description":"List the ids of Condition resources on a FHIR R4 server.",` +
-					`"sql":"SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;"},` +
-					`{"description":"Read a single Patient resource by logical id and return its full JSON.",` +
-					`"sql":"SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');"},` +
-					`{"description":"Expand a server's supported REST interactions to one row per (resource type, interaction).",` +
-					`"sql":"SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');"}` +
-					`]`,
+				"vgi.example_queries": fhirworker.ExampleQueriesJSON(schemaExamples),
 			},
 		}),
 	)
@@ -223,6 +212,36 @@ func main() {
 	}
 	w.RunStdio()
 }
+
+// schemaExamples is the schema-level vgi.example_queries list for "main": one
+// representative query per object, then the composed multi-function examples
+// (defined once in fhirworker, shared with each driving function's examples).
+var schemaExamples = append([]vgi.CatalogExample{
+	{
+		Description: "List the curated public FHIR R4 test servers and whether each needs authentication.",
+		SQL:         "SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name;",
+	},
+	{
+		Description: "List Patients with their core demographic fields flattened into columns.",
+		SQL:         "SELECT id, family, given, gender, birth_date FROM fhir.main.fhir_patients('https://r4.smarthealthit.org') LIMIT 20;",
+	},
+	{
+		Description: "List numeric Observations with their code, value, and unit.",
+		SQL:         "SELECT code, code_display, value, unit FROM fhir.main.fhir_observations('https://r4.smarthealthit.org') WHERE value IS NOT NULL LIMIT 20;",
+	},
+	{
+		Description: "List the ids of Condition resources on a FHIR R4 server.",
+		SQL:         "SELECT id FROM fhir.main.fhir_search('https://r4.smarthealthit.org', 'Condition') LIMIT 20;",
+	},
+	{
+		Description: "Read a single Patient resource by logical id and return its full JSON.",
+		SQL:         "SELECT resource FROM fhir.main.fhir_read('https://r4.smarthealthit.org', 'Patient', '45a69bf0-7116-4f9f-a1d9-29700439b4a4');",
+	},
+	{
+		Description: "Expand a server's supported REST interactions to one row per (resource type, interaction).",
+		SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
+	},
+}, fhirworker.ComposedExamples...)
 
 // filterKnownFlags drops argv tokens for flags this binary doesn't define, so
 // launcher-injected differentiation flags don't abort flag parsing. Flags named
