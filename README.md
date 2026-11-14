@@ -177,3 +177,7 @@ Written by [Query.Farm](https://query.farm).
 
 Copyright 2026 Query Farm LLC - https://query.farm
 
+
+## Notebooks
+
+[Executed FHIR pagination and quantity walkthrough](notebooks/README.md) uses explicit synthetic resources and a separate page-size experiment.

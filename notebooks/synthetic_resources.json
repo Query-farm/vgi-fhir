@@ -1,0 +1,331 @@
+{
+  "description": "Explicitly synthetic resources for SQL shape,reference,unit and pagination analysis; not patient records or clinically validated observations. Zero quantity is deliberate.",
+  "Patient": [
+    {
+      "resourceType": "Patient",
+      "id": "p-a",
+      "active": true,
+      "name": [
+        {
+          "family": "Synthetic",
+          "given": [
+            "A"
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "p-b",
+      "active": true,
+      "name": [
+        {
+          "family": "Synthetic",
+          "given": [
+            "B"
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "p-c",
+      "active": true,
+      "name": [
+        {
+          "family": "Synthetic",
+          "given": [
+            "C"
+          ]
+        }
+      ]
+    },
+    {
+      "resourceType": "Patient",
+      "id": "p-d",
+      "active": true,
+      "name": [
+        {
+          "family": "Synthetic",
+          "given": [
+            "D"
+          ]
+        }
+      ]
+    }
+  ],
+  "Observation": [
+    {
+      "resourceType": "Observation",
+      "id": "o01",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-01T12:00:00Z",
+      "valueQuantity": {
+        "value": 72,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o02",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-02T12:00:00Z",
+      "valueQuantity": {
+        "value": 72000,
+        "unit": "g",
+        "system": "http://unitsofmeasure.org",
+        "code": "g"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o03",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-b"
+      },
+      "effectiveDateTime": "2024-01-03T12:00:00Z",
+      "valueQuantity": {
+        "value": 0,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o04",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-b"
+      },
+      "effectiveDateTime": "2024-01-04T12:00:00Z",
+      "valueString": "Synthetic non-quantity result"
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o05",
+      "status": "preliminary",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-05T12:00:00Z",
+      "valueQuantity": {
+        "value": 73,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o06",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "8302-2"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-06T12:00:00Z",
+      "valueQuantity": {
+        "value": 170,
+        "unit": "cm",
+        "system": "http://unitsofmeasure.org",
+        "code": "cm"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o07",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/missing"
+      },
+      "effectiveDateTime": "2024-01-07T12:00:00Z",
+      "valueQuantity": {
+        "value": 80,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o08",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-b"
+      },
+      "effectiveDateTime": "2024-01-08T12:00:00Z",
+      "valueQuantity": {
+        "value": 160,
+        "unit": "[lb_av]",
+        "system": "http://unitsofmeasure.org",
+        "code": "[lb_av]"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o09",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "https://example.invalid/Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-09T12:00:00Z",
+      "valueQuantity": {
+        "value": 74,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o10",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-a"
+      },
+      "effectiveDateTime": "2024-01-10T12:00:00Z",
+      "valueQuantity": {
+        "value": 70,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg",
+        "comparator": "<"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o11",
+      "status": "final",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-c"
+      },
+      "effectiveDateTime": "2024-01-11T12:00:00Z",
+      "valueQuantity": {
+        "value": 70,
+        "unit": "kg",
+        "system": "https://example.invalid/units",
+        "code": "kg"
+      }
+    },
+    {
+      "resourceType": "Observation",
+      "id": "o12",
+      "status": "entered-in-error",
+      "code": {
+        "coding": [
+          {
+            "system": "http://loinc.org",
+            "code": "29463-7"
+          }
+        ]
+      },
+      "subject": {
+        "reference": "Patient/p-b"
+      },
+      "effectiveDateTime": "2024-01-12T12:00:00Z",
+      "valueQuantity": {
+        "value": 81,
+        "unit": "kg",
+        "system": "http://unitsofmeasure.org",
+        "code": "kg"
+      }
+    }
+  ]
+}
