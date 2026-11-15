@@ -159,13 +159,19 @@ var observationsExamples = []vgi.CatalogExample{
 // capabilitiesExamples are fhir_capabilities's examples, also rendered into its
 // vgi.example_queries tag. The vgi-lint agent simulator shows only the first 5,
 // so a composed example driven by this function must stay within them.
+//
+// The first example is the call clients (and vgi-lint's VGI911 scan probe)
+// reach for first, so it targets the frozen SMART sandbox (ExampleBaseURL):
+// its CapabilityStatement is ~0.7 MB and answers in ~0.3 s. The shared HAPI
+// test server's is ~2 MB and intermittently takes over 10 s from CI runners,
+// which made the probe time out; it stays as the second example.
 var capabilitiesExamples = []vgi.CatalogExample{
 	{
-		SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
+		SQL:         "SELECT resource_type, interactions FROM fhir.main.fhir_capabilities('" + ExampleBaseURL + "');",
 		Description: "List every resource type a FHIR server supports and the REST interactions available for each.",
 	},
 	{
-		SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://r4.smarthealthit.org');",
+		SQL:         "SELECT resource_type, UNNEST(interactions) AS interaction FROM fhir.main.fhir_capabilities('https://hapi.fhir.org/baseR4');",
 		Description: "Expand the supported REST interactions to one row per (resource type, interaction).",
 	},
 }
