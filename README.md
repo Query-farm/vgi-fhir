@@ -180,4 +180,4 @@ Copyright 2026 Query Farm LLC - https://query.farm
 
 ## Notebooks
 
-[Executed FHIR pagination and quantity walkthrough](notebooks/README.md) uses explicit synthetic resources and a separate page-size experiment.
+[Executed FHIR notebooks](notebooks/README.md) use synthetic resources to audit pagination, reference/quantity policies and raw-resource reads, with separate parameter experiments.

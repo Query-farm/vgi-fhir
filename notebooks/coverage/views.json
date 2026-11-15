@@ -1,0 +1,46 @@
+{
+  "query": "SELECT * FROM duckdb_views() WHERE database_name='fhir'",
+  "captured_at": "2026-11-15T01:54:06.329924+00:00",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "schema_oid",
+    "view_name",
+    "view_oid",
+    "comment",
+    "tags",
+    "internal",
+    "temporary",
+    "column_count",
+    "sql",
+    "is_bound"
+  ],
+  "rows": [
+    [
+      "fhir",
+      22595,
+      "main",
+      22596,
+      "fhir_servers",
+      22734,
+      "Curated directory of public HL7 FHIR R4 endpoints and whether they require authentication.",
+      {
+        "category": "interoperability",
+        "domain": "healthcare",
+        "topic": "fhir-r4-rest",
+        "vgi.category": "Server Discovery",
+        "vgi.doc_llm": "A static, credential-free directory of well-known public HL7 FHIR R4 endpoints. Each row pairs a human name with the service base_url to pass as the first argument of the fhir_patients / fhir_observations / fhir_search / fhir_read / fhir_capabilities table functions, the FHIR version served, whether the endpoint needs authentication, and a short description. Query this first to discover a base URL to point the other functions at, without having to know an endpoint up front.",
+        "vgi.doc_md": "## fhir_servers\n\nA curated, credential-free directory of well-known **public HL7 FHIR R4** endpoints. It is a static list (no network access), so it always returns instantly and is the natural starting point for discovery: pick a `base_url` here and hand it to any `fhir_*` table function as its first argument.\n\n### Columns\n\n- `name` \u2014 human-friendly server name.\n- `base_url` \u2014 the FHIR R4 service base URL (e.g. `https://hapi.fhir.org/baseR4`).\n- `fhir_version` \u2014 the FHIR version served (all `4.0.1`).\n- `requires_auth` \u2014 whether an OAuth bearer token is needed (all listed servers are open).\n- `description` \u2014 what the endpoint is and what data it holds.",
+        "vgi.example_queries": "[{\"description\":\"List the curated public FHIR R4 test servers and whether each needs authentication.\",\"sql\":\"SELECT name, base_url, requires_auth FROM fhir.main.fhir_servers ORDER BY name\"}]",
+        "vgi.keywords": "[\"fhir\",\"fhir r4\",\"servers\",\"endpoints\",\"directory\",\"registry\",\"base url\",\"public test server\",\"hapi\",\"discovery\"]",
+        "vgi.title": "Public FHIR Servers"
+      },
+      false,
+      false,
+      null,
+      "CREATE VIEW fhir_servers AS SELECT \"name\", base_url, fhir_version, requires_auth, description FROM (SELECT * FROM (VALUES ('HAPI FHIR R4 Public Test Server', 'https://hapi.fhir.org/baseR4', '4.0.1', false, 'Open, unauthenticated public HAPI reference server hosting a large shared R4 dataset; ideal for exploration and demos.'), ('Firely Public FHIR R4 Server', 'https://server.fire.ly', '4.0.1', false, 'Firely public FHIR R4 test server (no authentication); a useful second endpoint for cross-server checks.'), ('SMART Health IT R4 Sandbox', 'https://r4.smarthealthit.org', '4.0.1', false, 'SMART Health IT open R4 sandbox seeded with synthetic Synthea patient data.'), ('HL7 Terminology Server (R4)', 'https://tx.fhir.org/r4', '4.0.1', false, 'HL7 public R4 terminology server exposing CodeSystem, ValueSet, and related conformance resources.')) AS valueslist) AS t(\"name\", base_url, fhir_version, requires_auth, description);",
+      false
+    ]
+  ]
+}

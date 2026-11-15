@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+        "notes": "Actual complete5functions+1view=6logical surfaces. Full native arguments/result fields/view five-column signature retained; no physicaltables/COPY. Optionalexplicitbearerparameters remain in denominator. Current/released source diff changesmetadata/examples/tests only; registrations,args,bind,process,view and HTTP/flattening unchanged. Exact release runtime executed; current exact runtime not claimed. All requests strictsyntheticloopback, no realclinicalendpoint/credentials."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "catalog_sha256": "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92",
+        "notes": "Actual complete5functions+1view=6logical surfaces. Full native arguments/result fields/view five-column signature retained; no physicaltables/COPY. Optionalexplicitbearerparameters remain in denominator. Current/released source diff changesmetadata/examples/tests only; registrations,args,bind,process,view and HTTP/flattening unchanged. Exact release runtime executed; current exact runtime not claimed. All requests strictsyntheticloopback, no realclinicalendpoint/credentials."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_complete_pages_do_not_make_quantities_comparable.ipynb",
+      "sha256": "16598b453aa2196a73ec4becd4954f824ae739d6801f0b77dd42ec7cb167e212",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "7a4eddc070aa28f631a3559a43efb89b8a7655a8e3467e420050acd7fb1bff8c"
+      }
+    },
+    {
+      "path": "02_read_the_resource_behind_a_null.ipynb",
+      "sha256": "d018b24962c9a48fa5be08d349b1e5024b44e1d56b78756f2faeb3d492aef8df",
+      "execution": {
+        "path": "coverage/run-02.json",
+        "sha256": "b4a6b69c26e6be74d2df7d3465ddd7f65d282815cc848ad25e78924922876c5f"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_capabilities"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "sql": [
+        {
+          "cell": "capability-query",
+          "reference": "fhir.main.fhir_capabilities"
+        }
+      ],
+      "narrative_cells": [
+        "capability-story"
+      ],
+      "result_cells": [
+        "capability-query",
+        "capability-check",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "capability-check",
+        "audit-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "d018b24962c9a48fa5be08d349b1e5024b44e1d56b78756f2faeb3d492aef8df",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Check advertised resource interactions before choosing the search/read operation.",
+        "finding": "Actual fixtureCapabilityStatement yields Patient/Observation read+search-type. Visible SQL expansion drives explicit gating before actual reads. Does not establish particularID existence or remoteavailability; no writesadvertised. Materializedonce, one auditedmetadatarequest."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_patients"
+      },
+      "notebook": "01_complete_pages_do_not_make_quantities_comparable.ipynb",
+      "sql": [
+        {
+          "cell": "4b98e548",
+          "reference": "fhir.main.fhir_patients"
+        }
+      ],
+      "narrative_cells": [
+        "87b9cd68",
+        "d672409b"
+      ],
+      "result_cells": [
+        "1f0e8920",
+        "c9e5e5d8",
+        "155d5cd5",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "1f0e8920",
+        "c9e5e5d8"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "16598b453aa2196a73ec4becd4954f824ae739d6801f0b77dd42ec7cb167e212",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Retrieve complete finite Patientinventory and scope reference resolution explicitly.",
+        "finding": "All4PatientIDsarriveonce; join resolvesonlyexactlocalPatient/id. All12Observationsretainedincluding2unresolvedsubjects. Page2\u21924reducesrequestswhileIDs/policy/conversionsunchanged; no externalbaseURLstripping orclinicalinterpretation."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_observations"
+      },
+      "notebook": "01_complete_pages_do_not_make_quantities_comparable.ipynb",
+      "sql": [
+        {
+          "cell": "4b98e548",
+          "reference": "fhir.main.fhir_observations"
+        }
+      ],
+      "narrative_cells": [
+        "87b9cd68",
+        "d672409b",
+        "99a5bb42"
+      ],
+      "result_cells": [
+        "1f0e8920",
+        "c9e5e5d8",
+        "155d5cd5",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "c9e5e5d8",
+        "155d5cd5",
+        "61708f42"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "16598b453aa2196a73ec4becd4954f824ae739d6801f0b77dd42ec7cb167e212",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Separate complete retrieval from technically comparable quantities.",
+        "finding": "12uniqueauthoredresourcesreconcileknowninventory; flattenpreserveszeroandNULL. RawJSONsuppliescoding/unit/comparator; orderedexclusioncountsretainall12, only3explicitlyeligiblekg/gquantitiesnormalized. Clinicalplausibility/validation notclaimed."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_servers"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "sql": [
+        {
+          "cell": "directory-query",
+          "reference": "fhir.main.fhir_servers"
+        }
+      ],
+      "narrative_cells": [
+        "connection-story"
+      ],
+      "result_cells": [
+        "directory-query",
+        "directory-finding"
+      ],
+      "interpretation_cells": [
+        "directory-finding",
+        "experiment-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "d018b24962c9a48fa5be08d349b1e5024b44e1d56b78756f2faeb3d492aef8df",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Distinguish a static endpoint-discovery directory from permission to contact it or proof of live content.",
+        "finding": "Actual4directoryrowsshowbaseURL,version,authflag; allareclassifiedlisted-only andnoneequalsselectedloopback. Result-derivedcount/flagsinterpretedasreleasecatalogmetadata, notcurrentavailability orauthorization. Noneispassedtofetch; requestauditstayszeroafterdirectoryquery. Meaningfulread-onlydirectoryusewithoutclinicalrequests."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_search"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "sql": [
+        {
+          "cell": "search-query",
+          "reference": "fhir.main.fhir_search"
+        }
+      ],
+      "narrative_cells": [
+        "search-story"
+      ],
+      "result_cells": [
+        "search-query",
+        "search-finding",
+        "read-finding",
+        "audit-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "search-finding",
+        "read-finding",
+        "audit-finding"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "d018b24962c9a48fa5be08d349b1e5024b44e1d56b78756f2faeb3d492aef8df",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Reconcile raw resource population with specialized flattening and retain alternative value shapes.",
+        "finding": "Genericsearchmaterializedonce fetches12ObservationIDs in3pages. FulloutercomparisonretainsallIDs andcanonicalparsedJSONagreeswithflattenedrawandcommittedfixture. Numericzero vsabsentquantity+textretained; presence/matchingmatrixisnotvalidityscore."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fhir_read"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "sql": [
+        {
+          "cell": "read-query",
+          "reference": "fhir.main.fhir_read"
+        }
+      ],
+      "narrative_cells": [
+        "read-story"
+      ],
+      "result_cells": [
+        "read-query",
+        "read-finding",
+        "audit-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "read-finding",
+        "audit-finding",
+        "experiment-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-15T02:02:49.697583+00:00",
+        "notebook_sha256": "d018b24962c9a48fa5be08d349b1e5024b44e1d56b78756f2faeb3d492aef8df",
+        "catalog_sha256": [
+          "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+          "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92"
+        ],
+        "purpose": "Independently inspect one resource behind a numeric projection.",
+        "finding": "Selectedo03returnsnumericzero; separateo04experimentreturnsNULLwithretainedtext. BothactualreadsareoneHTTPGET andpayloadmatchesgenericsearchresource. Fullpopulations/shapevalues/eightrequestcountfixed; nochangingservertransactionguaranteeclaimed."
+      }
+    }
+  ]
+}

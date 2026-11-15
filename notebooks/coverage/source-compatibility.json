@@ -1,0 +1,23 @@
+{
+  "release": "v0.4.0",
+  "release_commit": "ced609df56514c8a53a9a2929bd709d68e87feae",
+  "current_revision": "90ec83458a72adbf02947b9ca206db9bbf6d899e",
+  "runtime": "Haybarn2.0.0rc11",
+  "launch": "github-auto://Query-farm/vgi-fhir@v0.4.0",
+  "source_review": "Complete release/current diff reviewed: changes only in Metadata() prose/example lists, catalog agent tasks/schema example lists, new examples.go and their tests. Function registration, argument structs/ArgumentSpecs, bind/output schemas, state/process behavior, view definition, HTTP/pagination/flattening implementation and dependencies are unchanged. Exact-current binary was not built or executed; current compatibility is source-reviewed, distinct from exact release runtime.",
+  "metadata_provenance": "Actual catalog-metadata.json vgi.title/vgi.subtitle; unchanged on current main.",
+  "source_ci": {
+    "url": "https://github.com/Query-farm/vgi-fhir/actions/runs/43568346131",
+    "revision": "90ec83458a72adbf02947b9ca206db9bbf6d899e",
+    "conclusion": "failure",
+    "green_jobs": [
+      "build/vet/fmt/unit",
+      "SQL E2E HTTP",
+      "SQL E2E Unix",
+      "SQL E2E subprocess"
+    ],
+    "failure": "Metadata quality98/100,L1: existing VGI911 fhir_capabilities first-row latency/unbounded/hanging diagnostic; no source changes or rerun. Prior source CI43553728313 atc0a26a6 was fully green."
+  },
+  "scope": "Five read-only table functions with optional explicit bearer token plus static fhir_servers view. Complete native args/result-schema metadata and five view columns retained. No physical tables/COPY/hidden authenticated registrations. All6 remain denominator; fixtures use no credentials and all retrievals address only explicitly authored loopback inventory.",
+  "network": "Catalog collection attaches native public release and reads static catalog only. No FHIR endpoint requests in metadata collector; notebook fetches only ephemeral loopback fixture. Public directory is not probed."
+}

@@ -1,0 +1,47 @@
+{
+  "query": "SELECT * FROM duckdb_databases() WHERE database_name='fhir'",
+  "captured_at": "2026-11-15T01:54:06.331844+00:00",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "path",
+    "comment",
+    "tags",
+    "internal",
+    "type",
+    "readonly",
+    "encrypted",
+    "cipher",
+    "options"
+  ],
+  "rows": [
+    [
+      "fhir",
+      22595,
+      null,
+      "Query HL7 FHIR R4 REST servers and return resources as rows",
+      {
+        "source": "vgi-fhir",
+        "vgi.agent_test_tasks": "[{\"name\":\"has_ruecker_patient\",\"prompt\":\"Using the FHIR R4 server at https://r4.smarthealthit.org, determine whether there is at least one Patient whose family name is Ruecker. Answer with a single boolean.\"},{\"name\":\"has_numeric_observation\",\"prompt\":\"From the FHIR R4 server at https://r4.smarthealthit.org, determine whether any Observation carries a numeric measurement (a non-null value). Answer with a single boolean.\"},{\"name\":\"has_conditions\",\"prompt\":\"Determine whether the FHIR R4 server at https://r4.smarthealthit.org has any Condition resources. Answer with a single boolean.\"},{\"name\":\"supports_patient_type\",\"prompt\":\"Read the CapabilityStatement of the FHIR R4 server at https://r4.smarthealthit.org and determine whether it advertises support for the Patient resource type. Answer with a single boolean.\"},{\"name\":\"read_patient_by_id\",\"prompt\":\"Read the Patient resource with logical id '45a69bf0-7116-4f9f-a1d9-29700439b4a4' from the FHIR R4 server at https://r4.smarthealthit.org and determine whether its family name is 'Ruecker'. Answer with a single boolean.\"},{\"name\":\"directory_lists_hapi\",\"prompt\":\"The vgi-fhir connector exposes a directory of well-known public FHIR test servers. Determine whether it lists a server whose base URL is https://hapi.fhir.org/baseR4. Answer with a single boolean.\"}]",
+        "vgi.author": "Query.Farm",
+        "vgi.copyright": "Copyright 2026 Query Farm LLC - https://query.farm",
+        "vgi.doc_llm": "Query live HL7 FHIR R4 REST servers from SQL. List Patients and Observations with their core demographic and vital-sign fields flattened into columns, run a generic search over any FHIR resource type, read a single resource by id, and inspect a server's CapabilityStatement (which resource types and REST interactions it supports). Use to answer questions about patients, clinical observations, and the capabilities of an EHR/FHIR endpoint without leaving SQL; every function also returns the full resource JSON.",
+        "vgi.doc_md": "# FHIR R4 in SQL\n\n![HL7 FHIR logo](https://hl7.org/fhir/assets/images/fhir-logo-www.png)\n\n**Query live HL7 FHIR R4 healthcare APIs directly from SQL** \u2014 turn any FHIR REST server into DuckDB tables and run analytics over patients, clinical observations, and server capabilities without writing a line of integration code.\n\nThe `fhir` catalog connects to any [HL7 FHIR R4](https://hl7.org/fhir/R4/) endpoint over plain REST/JSON and streams the resources back as DuckDB rows over Apache Arrow. FHIR (Fast Healthcare Interoperability Resources) is the modern HL7 standard that powers EHR, EMR, and health-data interoperability across hospitals, payers, and digital-health platforms. This connector is for analysts, data engineers, and clinical-informatics teams who want to explore, validate, or extract FHIR data with familiar SQL instead of bespoke API clients \u2014 point a function at a service base URL (for example `https://hapi.fhir.org/baseR4`) and start querying.\n\nUnder the hood the worker speaks the FHIR R4 [RESTful API](https://hl7.org/fhir/R4/http.html) using nothing but the Go standard library, so it stays light and dependency-free while remaining faithful to the published [FHIR R4 specification](https://hl7.org/fhir/R4/) (build source at [HL7/fhir on GitHub](https://github.com/HL7/fhir)). It follows FHIR [search](https://hl7.org/fhir/R4/search.html) Bundle pagination automatically \u2014 every `link[].relation == \"next\"` page is fetched up to a safety cap \u2014 so a single query transparently spans many result pages. An optional OAuth bearer `token` argument unlocks protected endpoints, and non-2xx responses (including FHIR `OperationOutcome` bodies) surface as clean SQL errors rather than panics.\n\nThe connector turns a FHIR endpoint's core capabilities into SQL: pull clinical resources with their most-used fields flattened into typed columns, run a generic search across any resource type (Condition, Encounter, MedicationRequest, \u2026) with an optional raw query string and `_count` page size, read an individual resource by its logical id, and discover which resource types and REST interactions a server supports from its [CapabilityStatement](https://hl7.org/fhir/R4/capabilitystatement.html). Flattened results always carry the untouched resource JSON alongside the typed columns, so nothing is lost \u2014 anything not surfaced as a column is still reachable with `json_extract`. Built on the [vgi-go](https://github.com/Query-farm/vgi-go) SDK.\n\nNot sure which endpoint to point at? Browse the built-in `fhir_servers` directory view for a curated list of public FHIR R4 base URLs, then hand one to any `fhir_*` function. Worked, runnable statements ship as each function's examples.",
+        "vgi.keywords": "[\"fhir\",\"hl7\",\"fhir r4\",\"healthcare\",\"ehr\",\"patient\",\"observation\",\"clinical\",\"rest\",\"json\",\"capabilitystatement\",\"interoperability\",\"medical records\"]",
+        "vgi.license": "MIT",
+        "vgi.subtitle": "Query HL7 FHIR R4 REST servers from SQL: patients, observations, generic search, reads by id, and server capabilities.",
+        "vgi.support_contact": "https://github.com/Query-farm/vgi-fhir/issues",
+        "vgi.support_policy_url": "https://github.com/Query-farm/vgi-fhir/blob/main/README.md",
+        "vgi.title": "FHIR R4 Connector"
+      },
+      false,
+      "vgi",
+      false,
+      false,
+      null,
+      {
+        "location": "github-auto://Query-farm/vgi-fhir@v0.4.0"
+      }
+    ]
+  ]
+}

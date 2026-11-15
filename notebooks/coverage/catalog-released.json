@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-fhir",
+  "revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+  "release_tag": "v0.4.0",
+  "captured_at": "2026-11-15T01:54:06.322080+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/functions.json",
+      "sha256": "3a9f29edd09f838dcc0041c8da19dab8dc6a56ef0514314e980e97cdb0f241ed",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/tables.json",
+      "sha256": "d1e2af4f28722b9562987d26ff5da822777c0ab3ff59709f7c0bc1d28f4d1be1",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/views.json",
+      "sha256": "832ae49e4b48a54a84105f5979924f48f9b3524118f0ce7eda3282aefdaffda3",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/arguments.json",
+      "sha256": "0e5f75b51134c50a77a48556f8101f318837be70ec688a7efdfeb13d661d8d3a",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/table-columns.json",
+      "sha256": "d1813a3666466af24605e562e0a05b481548a75ebf25e1a94b36b20898046769",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/copy-formats.json",
+      "sha256": "de264b8b98b6b9807974cc2651aca5ca91852ab9bb0b725c3754ea44cda8b5e6",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/catalog-metadata.json",
+      "sha256": "ddc6cc68edf2809b5ff39c9d5832c294d2b49ff994d9a030a846b14e21b34de0",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/source-compatibility.json",
+      "sha256": "927e786d723aadb3f7bd758625003056db506a9949f58c521b4204ac3e02eebf",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    },
+    {
+      "path": "coverage/release-current-source.diff",
+      "sha256": "1085645bf348d209c30329d1eaf44bc95fedc881641f01f86bde9fb5534394e6",
+      "description": "Complete released runtime export or reviewed current/released source compatibility evidence; current exact runtime is not claimed."
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "fhir_capabilities",
+      "kind": "function",
+      "authentication": "optional",
+      "access": "read",
+      "signatures": [
+        "fhir_capabilities(base_url VARCHAR, token VARCHAR) -> TABLE(resource_type VARCHAR, interactions VARCHAR[])"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "fhir_observations",
+      "kind": "function",
+      "authentication": "optional",
+      "access": "read",
+      "signatures": [
+        "fhir_observations(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, status VARCHAR, code VARCHAR, code_display VARCHAR, value DOUBLE, unit VARCHAR, effective VARCHAR, subject VARCHAR, raw VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "fhir_patients",
+      "kind": "function",
+      "authentication": "optional",
+      "access": "read",
+      "signatures": [
+        "fhir_patients(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, family VARCHAR, given VARCHAR, gender VARCHAR, birth_date VARCHAR, active BOOLEAN, raw VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "fhir_read",
+      "kind": "function",
+      "authentication": "optional",
+      "access": "read",
+      "signatures": [
+        "fhir_read(base_url VARCHAR, resource_type VARCHAR, id VARCHAR, token VARCHAR) -> TABLE(resource VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "fhir_search",
+      "kind": "function",
+      "authentication": "optional",
+      "access": "read",
+      "signatures": [
+        "fhir_search(base_url VARCHAR, resource_type VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, resource VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "fhir_servers",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "VIEW(name VARCHAR, base_url VARCHAR, fhir_version VARCHAR, requires_auth BOOLEAN, description VARCHAR)"
+      ],
+      "note": "Static directory only; no HTTP request required, availability/auth assertions are published metadata rather than live checks."
+    }
+  ],
+  "launch": "github-auto://Query-farm/vgi-fhir@v0.4.0",
+  "runtime": "Haybarn2.0.0rc11",
+  "review_notes": "Five read-only table functions with optional explicit bearer token plus static fhir_servers view. Complete native args/result-schema metadata and five view columns retained. No physical tables/COPY/hidden authenticated registrations. All6 remain denominator; fixtures use no credentials and all retrievals address only explicitly authored loopback inventory. Complete release/current diff reviewed: changes only in Metadata() prose/example lists, catalog agent tasks/schema example lists, new examples.go and their tests. Function registration, argument structs/ArgumentSpecs, bind/output schemas, state/process behavior, view definition, HTTP/pagination/flattening implementation and dependencies are unchanged. Exact-current binary was not built or executed; current compatibility is source-reviewed, distinct from exact release runtime."
+}

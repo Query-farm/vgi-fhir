@@ -1,0 +1,462 @@
+{
+  "schema_version": 1,
+  "status": "met",
+  "meets_target": true,
+  "catalogs": {
+    "released": {
+      "catalog_status": "verified",
+      "revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc",
+      "collection_reconciled": true,
+      "denominator": 6,
+      "observed_objects": 6,
+      "required": 6,
+      "verified_count": 6,
+      "candidate_count": 0,
+      "fraction": 1.0,
+      "meets_target": true,
+      "exact_runtime_count": 6,
+      "runtime_revisions": [
+        "ced609df56514c8a53a9a2929bd709d68e87feae"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_capabilities"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_observations"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_patients"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_read"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_servers"
+        }
+      ],
+      "uncovered": [],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_capabilities",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_capabilities(base_url VARCHAR, token VARCHAR) -> TABLE(resource_type VARCHAR, interactions VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_observations",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_observations(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, status VARCHAR, code VARCHAR, code_display VARCHAR, value DOUBLE, unit VARCHAR, effective VARCHAR, subject VARCHAR, raw VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_patients",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_patients(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, family VARCHAR, given VARCHAR, gender VARCHAR, birth_date VARCHAR, active BOOLEAN, raw VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_read",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_read(base_url VARCHAR, resource_type VARCHAR, id VARCHAR, token VARCHAR) -> TABLE(resource VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_search(base_url VARCHAR, resource_type VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, resource VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_servers",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "VIEW(name VARCHAR, base_url VARCHAR, fhir_version VARCHAR, requires_auth BOOLEAN, description VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    "current": {
+      "catalog_status": "verified",
+      "revision": "90ec83458a72adbf02947b9ca206db9bbf6d899e",
+      "catalog_sha256": "7a4a8be1c7953d329dc2a59f81c07bf0d587b71d637d0f3b21a0d29a5babdf92",
+      "collection_reconciled": true,
+      "denominator": 6,
+      "observed_objects": 6,
+      "required": 6,
+      "verified_count": 6,
+      "candidate_count": 0,
+      "fraction": 1.0,
+      "meets_target": true,
+      "exact_runtime_count": 0,
+      "runtime_revisions": [
+        "ced609df56514c8a53a9a2929bd709d68e87feae"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_capabilities"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_observations"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_patients"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_read"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_servers"
+        }
+      ],
+      "uncovered": [],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_capabilities",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_capabilities(base_url VARCHAR, token VARCHAR) -> TABLE(resource_type VARCHAR, interactions VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_observations",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_observations(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, status VARCHAR, code VARCHAR, code_display VARCHAR, value DOUBLE, unit VARCHAR, effective VARCHAR, subject VARCHAR, raw VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_patients",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_patients(base_url VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, family VARCHAR, given VARCHAR, gender VARCHAR, birth_date VARCHAR, active BOOLEAN, raw VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_read",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_read(base_url VARCHAR, resource_type VARCHAR, id VARCHAR, token VARCHAR) -> TABLE(resource VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fhir_search(base_url VARCHAR, resource_type VARCHAR, count BIGINT, token VARCHAR, query VARCHAR) -> TABLE(id VARCHAR, resource VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "optional"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fhir_servers",
+          "kinds": [
+            "table"
+          ],
+          "signatures": [
+            "VIEW(name VARCHAR, base_url VARCHAR, fhir_version VARCHAR, requires_auth BOOLEAN, description VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  },
+  "interface_drift": {
+    "known": true,
+    "current_only": [],
+    "released_only": [],
+    "changed": []
+  },
+  "notebooks": {
+    "01_complete_pages_do_not_make_quantities_comparable.ipynb": {
+      "verified": true,
+      "issues": []
+    },
+    "02_read_the_resource_behind_a_null.ipynb": {
+      "verified": true,
+      "issues": []
+    }
+  },
+  "examples": [
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_capabilities"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_patients"
+      },
+      "notebook": "01_complete_pages_do_not_make_quantities_comparable.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_observations"
+      },
+      "notebook": "01_complete_pages_do_not_make_quantities_comparable.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_servers"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_search"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fhir_read"
+      },
+      "notebook": "02_read_the_resource_behind_a_null.ipynb",
+      "runtime_revision": "ced609df56514c8a53a9a2929bd709d68e87feae",
+      "runtime_catalog_sha256": "773e703623dfdd9e9e9c392b813bdcf1f9c9c1286fd6f8928b81a9f9661440dc"
+    }
+  ],
+  "issues": []
+}
