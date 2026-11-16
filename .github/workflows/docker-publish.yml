@@ -6,13 +6,12 @@
 # Query-farm/vgi-actions; this file gates on the repo's own CI suite and supplies
 # the worker-specific inputs.
 #
-# Tag-driven: vX.Y.Z -> :X.Y.Z/:X.Y/:latest, push to main -> :edge. Publishing a
+# Tag-driven: vX.Y.Z -> :X.Y.Z/:X.Y/:latest, release tags only; :edge is no longer published. Publishing a
 # GitHub Release creates the tag, which fires this too.
 name: Publish image to ghcr.io
 
 on:
   push:
-    branches: [main]
     tags: ['v*.*.*']
   workflow_dispatch:
 
