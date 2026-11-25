@@ -13,7 +13,7 @@
 #   make clean       Remove built binaries
 #
 # test-sql needs haybarn-unittest on PATH:
-#   uv tool install --prerelease allow 'haybarn-unittest>=2.0.0rc11,<2.1'
+#   uv tool install --prerelease allow 'haybarn-unittest>=2.0.1rc3,<2.1'
 #   export PATH="$$HOME/.local/bin:$$PATH"
 
 WORKER_BIN  := vgi-fhir-worker

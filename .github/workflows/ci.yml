@@ -48,8 +48,8 @@ jobs:
       - id: r
         run: |
           REL=$(gh release list --repo Query-farm-haybarn/haybarn --limit 30 --json tagName \
-            --jq '[.[].tagName | select(startswith("haybarn-v2.0"))][0]')
-          test -n "$REL" || { echo "no haybarn-v2.0 release found" >&2; exit 1; }
+            --jq '[.[].tagName | select(startswith("haybarn-v2.0.1"))][0]')
+          test -n "$REL" || { echo "no haybarn-v2.0.1 release found" >&2; exit 1; }
           echo "release=$REL" >> "$GITHUB_OUTPUT"
           echo "Latest haybarn 2.0 release: $REL"
         env:
